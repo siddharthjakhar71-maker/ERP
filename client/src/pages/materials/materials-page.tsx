@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { ConfirmDeleteDialog } from '@/components/shared/confirm-delete-dialog';
 import { DataTable } from '@/components/shared/data-table';
+import { TableActionButton, TableActionButtons, tableActionIcons } from '@/components/shared/table-action-buttons';
 import { EmptyState } from '@/components/shared/empty-state';
 import { FormModal } from '@/components/shared/form-modal';
 import { ModuleToolbar } from '@/components/shared/module-toolbar';
@@ -78,7 +79,7 @@ export const MaterialsPage = () => {
             { key: 'unit', title: 'Unit' },
             { key: 'hsnCode', title: 'HSN', render: (row) => row.hsnCode || '—' },
             { key: 'status', title: 'Status', render: (row) => <StatusBadge status={row.status} /> },
-            { key: 'actions', title: 'Actions', className: 'w-36', render: (row) => <div className="flex gap-2"><Button type="button" variant="outline" className="h-9 px-3" onClick={() => { setSelectedMaterial(row); setShowForm(true); }}><Pencil className="mr-2 h-4 w-4" />Edit</Button><Button type="button" variant="outline" className="h-9 px-3 text-destructive hover:text-destructive" onClick={() => setMaterialToDelete(row)}><Trash2 className="mr-2 h-4 w-4" />Delete</Button></div> },
+            { key: 'actions', title: 'Actions', className: 'w-24 text-center', render: (row) => <TableActionButtons><TableActionButton label="Edit" icon={tableActionIcons.edit} onClick={() => { setSelectedMaterial(row); setShowForm(true); }} /><TableActionButton label="Delete" icon={tableActionIcons.delete} onClick={() => setMaterialToDelete(row)} /></TableActionButtons> },
           ]}
         />
       ) : null}

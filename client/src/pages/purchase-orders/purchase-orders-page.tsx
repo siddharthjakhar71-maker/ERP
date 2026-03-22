@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
-import { Eye, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { PurchaseOrderForm } from '@/components/purchase-orders/purchase-order-form';
 import { PurchaseOrderView } from '@/components/purchase-orders/purchase-order-view';
 import { ConfirmDeleteDialog } from '@/components/shared/confirm-delete-dialog';
 import { DataTable } from '@/components/shared/data-table';
 import { EmptyState } from '@/components/shared/empty-state';
+import { TableActionButton, TableActionButtons, tableActionIcons } from '@/components/shared/table-action-buttons';
 import { FormModal } from '@/components/shared/form-modal';
 import { ModuleToolbar } from '@/components/shared/module-toolbar';
 import { PageHeader } from '@/components/shared/page-header';
@@ -99,13 +100,13 @@ export const PurchaseOrdersPage = () => {
             {
               key: 'actions',
               title: 'Actions',
-              className: 'w-52',
+              className: 'w-32 text-center',
               render: (row) => (
-                <div className="flex flex-wrap gap-2">
-                  <Button type="button" variant="outline" className="h-9 px-3" onClick={() => setViewId(row.id)}><Eye className="mr-2 h-4 w-4" />View</Button>
-                  <Button type="button" variant="outline" className="h-9 px-3" onClick={() => { setSelectedId(row.id); setShowForm(true); }}><Pencil className="mr-2 h-4 w-4" />Edit</Button>
-                  <Button type="button" variant="outline" className="h-9 px-3 text-destructive hover:text-destructive" onClick={() => setDeleteTarget(row)}><Trash2 className="mr-2 h-4 w-4" />Delete</Button>
-                </div>
+                <TableActionButtons>
+                  <TableActionButton label="View" icon={tableActionIcons.view} onClick={() => setViewId(row.id)} />
+                  <TableActionButton label="Edit" icon={tableActionIcons.edit} onClick={() => { setSelectedId(row.id); setShowForm(true); }} />
+                  <TableActionButton label="Delete" icon={tableActionIcons.delete} onClick={() => setDeleteTarget(row)} />
+                </TableActionButtons>
               ),
             },
           ]}
