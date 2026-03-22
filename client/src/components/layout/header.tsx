@@ -13,7 +13,7 @@ export const Header = () => {
   const user = useAuthStore((state) => state.user);
 
   return (
-    <header className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-border bg-background/90 px-6 py-4 backdrop-blur">
+    <header className="sticky top-0 z-20 flex shrink-0 items-center justify-between gap-4 border-b border-border bg-background/90 px-4 py-4 backdrop-blur md:px-6">
       <div className="flex items-center gap-3">
         <Button variant="outline" size="icon" onClick={toggleSidebar}>
           <ChevronsLeftRight className="h-4 w-4" />
