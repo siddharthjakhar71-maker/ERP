@@ -1,10 +1,12 @@
 import { create } from 'zustand';
 
-interface UserProfile {
+export interface UserProfile {
   id: string;
   fullName: string;
   role: string;
   email: string;
+  phone?: string | null;
+  avatarUrl?: string | null;
 }
 
 interface AuthState {
@@ -12,6 +14,7 @@ interface AuthState {
   user: UserProfile | null;
   isAuthenticated: boolean;
   login: (payload: { token: string; user: UserProfile }) => void;
+  updateUser: (user: UserProfile) => void;
   clearAuth: () => void;
 }
 
@@ -24,5 +27,6 @@ const unauthenticatedState = {
 export const useAuthStore = create<AuthState>((set) => ({
   ...unauthenticatedState,
   login: ({ token, user }) => set({ token, user, isAuthenticated: true }),
+  updateUser: (user) => set((state) => ({ user, token: state.token, isAuthenticated: Boolean(state.token) })),
   clearAuth: () => set(unauthenticatedState),
 }));

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import accountRoutes from './account.routes.js';
 import authRoutes from './auth.routes.js';
 import dashboardRoutes from './dashboard.routes.js';
 import materialsRoutes from './materials.routes.js';
@@ -10,6 +11,7 @@ import vendorsRoutes from './vendors.routes.js';
 const router = Router();
 
 router.use('/auth', authRoutes);
+router.use('/account', accountRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/vendors', vendorsRoutes);
 router.use('/materials', materialsRoutes);

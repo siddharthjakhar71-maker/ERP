@@ -1,6 +1,10 @@
 import { Router } from 'express';
+import { eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { asyncHandler, ok } from '../utils/http.js';
+import { userProfiles, users } from '../../../shared/schema/index.js';
+import { db } from '../db/client.js';
+import { createSessionToken, verifyPassword } from '../utils/auth.js';
+import { asyncHandler, ok, ApiError } from '../utils/http.js';
 import { validate } from '../utils/validate.js';
 
 const router = Router();
@@ -19,15 +23,45 @@ router.post(
   '/login',
   validate(loginSchema),
   asyncHandler(async (req, res) => {
+    const email = req.body.email.trim().toLowerCase();
+    const [record] = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        passwordHash: users.passwordHash,
+        role: users.role,
+        status: users.status,
+        fullName: userProfiles.fullName,
+        phone: userProfiles.phone,
+        avatarUrl: userProfiles.avatarUrl,
+      })
+      .from(users)
+      .innerJoin(userProfiles, eq(userProfiles.userId, users.id))
+      .where(eq(users.email, email))
+      .limit(1);
+
+    if (!record || record.status !== 'active') {
+      throw new ApiError(401, 'Invalid email or password');
+    }
+
+    const passwordMatches = await verifyPassword(req.body.password, record.passwordHash);
+    if (!passwordMatches) {
+      throw new ApiError(401, 'Invalid email or password');
+    }
+
+    await db.update(users).set({ lastLoginAt: new Date(), updatedAt: new Date() }).where(eq(users.id, record.id));
+
     ok(
       res,
       {
-        token: 'demo-session-token',
+        token: createSessionToken(record.id),
         user: {
-          id: 'usr_admin',
-          fullName: 'Anika Sharma',
-          role: 'purchase_manager',
-          email: req.body.email,
+          id: record.id,
+          fullName: record.fullName,
+          role: record.role,
+          email: record.email,
+          phone: record.phone,
+          avatarUrl: record.avatarUrl,
         },
       },
       'Login successful',
