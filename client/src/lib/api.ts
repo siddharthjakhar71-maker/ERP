@@ -1,3 +1,5 @@
+import { useAuthStore } from '@/store/auth-store';
+
 export interface ApiEnvelope<T> {
   success: boolean;
   message: string;
@@ -13,9 +15,11 @@ export class ApiClientError extends Error {
 }
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = useAuthStore.getState().token;
   const response = await fetch(`/api${path}`, {
     headers: {
       'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(init?.headers ?? {}),
     },
     ...init,

@@ -157,3 +157,27 @@ export interface PurchaseOrderRecord extends Omit<PurchaseOrderListRecord, 'item
   vendor: { id: string; name: string; vendorCode: string; address?: string | null; phone?: string | null; email?: string | null };
   site: { id: string; name: string; siteCode: string; address?: string | null; location?: string | null };
 }
+
+
+export interface AccountProfile {
+  id: string;
+  email: string;
+  fullName: string;
+  role: string;
+  status: string;
+  phone: string | null;
+  avatarUrl: string | null;
+}
+
+export interface AccountProfilePayload {
+  email: string;
+  fullName: string;
+  phone?: string;
+  avatarUrl?: string;
+}
+
+export interface ChangePasswordPayload {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}

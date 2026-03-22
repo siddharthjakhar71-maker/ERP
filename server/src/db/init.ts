@@ -1,6 +1,7 @@
 import { count } from 'drizzle-orm';
 import { db, sqlite } from './client.js';
-import { materials, sites, systemSettings, vendors } from '../../../shared/schema/index.js';
+import { materials, sites, systemSettings, userProfiles, users, vendors } from '../../../shared/schema/index.js';
+import { hashPassword } from '../utils/auth.js';
 
 const baseSql = `
 CREATE TABLE IF NOT EXISTS users (
@@ -12,6 +13,19 @@ CREATE TABLE IF NOT EXISTS users (
   last_login_at INTEGER,
   created_at INTEGER NOT NULL DEFAULT (unixepoch()),
   updated_at INTEGER NOT NULL DEFAULT (unixepoch())
+);
+
+CREATE TABLE IF NOT EXISTS user_profiles (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL UNIQUE,
+  full_name TEXT NOT NULL,
+  designation TEXT,
+  phone TEXT,
+  avatar_url TEXT,
+  theme_preference TEXT NOT NULL DEFAULT 'system',
+  created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+  updated_at INTEGER NOT NULL DEFAULT (unixepoch()),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS system_settings (
@@ -363,6 +377,53 @@ const seedSites = [
 
 export const initializeDatabase = async () => {
   migrateCrudTables();
+
+  ensureColumn('users', 'last_login_at INTEGER');
+  ensureColumn('user_profiles', 'designation TEXT');
+  ensureColumn('user_profiles', 'phone TEXT');
+  ensureColumn('user_profiles', 'avatar_url TEXT');
+  ensureColumn('user_profiles', `theme_preference TEXT NOT NULL DEFAULT 'system'`);
+
+  const [{ value: usersCount }] = await db.select({ value: count() }).from(users);
+  if (usersCount === 0) {
+    const now = new Date();
+    await db.insert(users).values({
+      id: 'usr_admin',
+      email: 'anika@jakhira.com',
+      passwordHash: await hashPassword('password123'),
+      role: 'purchase_manager',
+      status: 'active',
+      createdAt: now,
+      updatedAt: now,
+    });
+    await db.insert(userProfiles).values({
+      id: 'profile_usr_admin',
+      userId: 'usr_admin',
+      fullName: 'Anika Sharma',
+      designation: 'Purchase Manager',
+      phone: '+91 98765 40001',
+      avatarUrl: '',
+      themePreference: 'system',
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+
+  const [{ value: profilesCount }] = await db.select({ value: count() }).from(userProfiles);
+  if (profilesCount === 0) {
+    const now = new Date();
+    await db.insert(userProfiles).values({
+      id: 'profile_usr_admin',
+      userId: 'usr_admin',
+      fullName: 'Anika Sharma',
+      designation: 'Purchase Manager',
+      phone: '+91 98765 40001',
+      avatarUrl: '',
+      themePreference: 'system',
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
 
   const [{ value: vendorsCount }] = await db.select({ value: count() }).from(vendors);
   if (vendorsCount === 0) {
