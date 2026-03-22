@@ -2,6 +2,7 @@ import { Router } from 'express';
 import accountRoutes from './account.routes.js';
 import authRoutes from './auth.routes.js';
 import dashboardRoutes from './dashboard.routes.js';
+import grnsRoutes from './grns.routes.js';
 import materialsRoutes from './materials.routes.js';
 import purchaseOrdersRoutes from './purchase-orders.routes.js';
 import settingsRoutes from './settings.routes.js';
@@ -18,8 +19,9 @@ router.use('/materials', materialsRoutes);
 router.use('/sites', sitesRoutes);
 router.use('/settings', settingsRoutes);
 router.use('/purchase-orders', purchaseOrdersRoutes);
+router.use('/grns', grnsRoutes);
 
-const placeholderRoutes = ['grns', 'bills', 'payments', 'stock', 'reports'] as const;
+const placeholderRoutes = ['bills', 'payments', 'stock', 'reports'] as const;
 
 for (const route of placeholderRoutes) {
   router.get(`/${route}`, (_req, res) => {

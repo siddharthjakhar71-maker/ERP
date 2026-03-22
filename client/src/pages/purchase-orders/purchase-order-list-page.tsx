@@ -40,9 +40,9 @@ export const PurchaseOrderListPage = () => {
             <select className="h-11 rounded-2xl border border-input bg-background px-4 text-sm" value={status} onChange={(event) => setStatus(event.target.value as PurchaseOrderStatus | '')}>
               <option value="">All statuses</option>
               <option value="draft">Draft</option>
-              <option value="approved">Approved</option>
-              <option value="partial">Partial</option>
-              <option value="completed">Completed</option>
+              <option value="issued">Issued</option>
+              <option value="partially_received">Partially received</option>
+              <option value="received">Received</option>
               <option value="cancelled">Cancelled</option>
             </select>
           </>

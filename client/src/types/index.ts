@@ -142,7 +142,8 @@ export interface SettingsRecord {
   poLayout: PoLayoutSettings;
 }
 
-export type PurchaseOrderStatus = 'draft' | 'approved' | 'partial' | 'completed' | 'cancelled';
+export type PurchaseOrderStatus = 'draft' | 'issued' | 'partially_received' | 'received' | 'cancelled';
+export type GrnStatus = 'draft' | 'posted';
 
 export interface PurchaseOrderItemPayload {
   materialId: string;
@@ -216,6 +217,82 @@ export interface PurchaseOrderRecord extends Omit<PurchaseOrderListRecord, 'item
   site: { id: string; name: string; siteCode: string; address?: string | null; location?: string | null };
 }
 
+export interface GrnItemPayload {
+  purchaseOrderItemId: string;
+  materialId: string;
+  description: string;
+  orderedQty: number;
+  previouslyReceivedQty: number;
+  pendingQty: number;
+  receivedQty: number;
+  unit: string;
+  remarks: string;
+}
+
+export interface GrnPayload {
+  grnNumber: string;
+  purchaseOrderId: string;
+  vendorId: string;
+  siteId: string;
+  grnDate: string;
+  receivedAt: string;
+  invoiceNumber: string;
+  invoiceDate?: string;
+  status: GrnStatus;
+  notes: string;
+  createdBy?: string;
+  items: GrnItemPayload[];
+}
+
+export interface GrnListRecord {
+  id: string;
+  grnNumber: string;
+  purchaseOrderId: string;
+  vendorId: string;
+  siteId: string;
+  grnDate: string;
+  receivedAt: string;
+  invoiceNumber?: string | null;
+  invoiceDate?: string | null;
+  status: GrnStatus;
+  notes?: string | null;
+  createdBy?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  itemCount: number;
+  totalReceivedQty: number;
+  purchaseOrder: { id: string; poNumber: string };
+  vendor: { id: string; name: string; vendorCode: string };
+  site: { id: string; name: string; siteCode: string };
+}
+
+export interface GrnItemRecord {
+  id: string;
+  grnId: string;
+  purchaseOrderItemId: string;
+  materialId: string;
+  description: string;
+  orderedQty: number;
+  previouslyReceivedQty: number;
+  pendingQty: number;
+  receivedQty: number;
+  unit: string;
+  remarks?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  material: { id: string; name: string; materialCode: string };
+}
+
+export interface GrnRecord extends Omit<GrnListRecord, 'itemCount' | 'totalReceivedQty'> {
+  purchaseOrder: { id: string; poNumber: string; status: PurchaseOrderStatus };
+  vendor: { id: string; name: string; vendorCode: string; address?: string | null; phone?: string | null; email?: string | null };
+  site: { id: string; name: string; siteCode: string; address?: string | null; location?: string | null };
+  items: GrnItemRecord[];
+}
+
+export interface GrnReceiptOptions extends PurchaseOrderRecord {
+  receiptEligibleItems: PurchaseOrderItemRecord[];
+}
 
 export interface AccountProfile {
   id: string;

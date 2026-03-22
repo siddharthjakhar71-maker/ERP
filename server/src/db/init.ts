@@ -147,6 +147,46 @@ CREATE TABLE IF NOT EXISTS purchase_order_items (
   FOREIGN KEY (purchase_order_id) REFERENCES purchase_orders(id) ON DELETE CASCADE,
   FOREIGN KEY (material_id) REFERENCES materials(id)
 );
+
+CREATE TABLE IF NOT EXISTS grns (
+  id TEXT PRIMARY KEY,
+  grn_number TEXT NOT NULL UNIQUE,
+  purchase_order_id TEXT NOT NULL,
+  vendor_id TEXT NOT NULL,
+  site_id TEXT NOT NULL,
+  grn_date INTEGER NOT NULL,
+  received_at INTEGER NOT NULL,
+  invoice_number TEXT,
+  invoice_date INTEGER,
+  status TEXT NOT NULL DEFAULT 'draft',
+  notes TEXT,
+  created_by TEXT,
+  created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+  updated_at INTEGER NOT NULL DEFAULT (unixepoch()),
+  FOREIGN KEY (purchase_order_id) REFERENCES purchase_orders(id),
+  FOREIGN KEY (vendor_id) REFERENCES vendors(id),
+  FOREIGN KEY (site_id) REFERENCES sites(id),
+  FOREIGN KEY (created_by) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS grn_items (
+  id TEXT PRIMARY KEY,
+  grn_id TEXT NOT NULL,
+  purchase_order_item_id TEXT NOT NULL,
+  material_id TEXT NOT NULL,
+  description TEXT NOT NULL,
+  ordered_qty REAL NOT NULL DEFAULT 0,
+  previously_received_qty REAL NOT NULL DEFAULT 0,
+  pending_qty REAL NOT NULL DEFAULT 0,
+  received_qty REAL NOT NULL DEFAULT 0,
+  unit TEXT NOT NULL DEFAULT '',
+  remarks TEXT,
+  created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+  updated_at INTEGER NOT NULL DEFAULT (unixepoch()),
+  FOREIGN KEY (grn_id) REFERENCES grns(id) ON DELETE CASCADE,
+  FOREIGN KEY (purchase_order_item_id) REFERENCES purchase_order_items(id),
+  FOREIGN KEY (material_id) REFERENCES materials(id)
+);
 `;
 
 type TableColumn = { name: string };
@@ -298,6 +338,33 @@ const migrateCrudTables = () => {
   ensureColumn('purchase_order_items', 'line_total REAL NOT NULL DEFAULT 0');
   ensureColumn('purchase_order_items', 'received_qty REAL NOT NULL DEFAULT 0');
   ensureColumn('purchase_order_items', 'pending_qty REAL NOT NULL DEFAULT 0');
+
+  ensureColumn('grns', 'grn_number TEXT');
+  ensureColumn('grns', 'purchase_order_id TEXT');
+  ensureColumn('grns', 'vendor_id TEXT');
+  ensureColumn('grns', 'site_id TEXT');
+  ensureColumn('grns', 'grn_date INTEGER');
+  ensureColumn('grns', 'received_at INTEGER');
+  ensureColumn('grns', 'invoice_number TEXT');
+  ensureColumn('grns', 'invoice_date INTEGER');
+  ensureColumn('grns', `status TEXT NOT NULL DEFAULT 'draft'`);
+  ensureColumn('grns', 'notes TEXT');
+  ensureColumn('grns', 'created_by TEXT');
+
+  ensureColumn('grn_items', 'grn_id TEXT');
+  ensureColumn('grn_items', 'purchase_order_item_id TEXT');
+  ensureColumn('grn_items', 'material_id TEXT');
+  ensureColumn('grn_items', `description TEXT NOT NULL DEFAULT ''`);
+  ensureColumn('grn_items', 'ordered_qty REAL NOT NULL DEFAULT 0');
+  ensureColumn('grn_items', 'previously_received_qty REAL NOT NULL DEFAULT 0');
+  ensureColumn('grn_items', 'pending_qty REAL NOT NULL DEFAULT 0');
+  ensureColumn('grn_items', 'received_qty REAL NOT NULL DEFAULT 0');
+  ensureColumn('grn_items', `unit TEXT NOT NULL DEFAULT ''`);
+  ensureColumn('grn_items', 'remarks TEXT');
+
+  sqlite.exec("UPDATE purchase_orders SET status = 'issued' WHERE status = 'approved'");
+  sqlite.exec("UPDATE purchase_orders SET status = 'partially_received' WHERE status = 'partial'");
+  sqlite.exec("UPDATE purchase_orders SET status = 'received' WHERE status = 'completed'");
 
   copyLegacyVendors();
   copyLegacyMaterials();

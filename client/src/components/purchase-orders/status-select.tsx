@@ -7,7 +7,14 @@ interface StatusSelectProps {
   name?: string;
 }
 
-const options: PurchaseOrderStatus[] = ['draft', 'approved', 'partial', 'completed', 'cancelled'];
+const options: PurchaseOrderStatus[] = ['draft', 'issued', 'partially_received', 'received', 'cancelled'];
+const labels: Record<PurchaseOrderStatus, string> = {
+  draft: 'Draft',
+  issued: 'Issued',
+  partially_received: 'Partially received',
+  received: 'Received',
+  cancelled: 'Cancelled',
+};
 
 export const StatusSelect = ({ value, onChange, disabled, name }: StatusSelectProps) => (
   <select
@@ -18,7 +25,7 @@ export const StatusSelect = ({ value, onChange, disabled, name }: StatusSelectPr
     onChange={(event) => onChange?.(event.target.value as PurchaseOrderStatus)}
   >
     {options.map((option) => (
-      <option key={option} value={option}>{option.charAt(0).toUpperCase() + option.slice(1)}</option>
+      <option key={option} value={option}>{labels[option]}</option>
     ))}
   </select>
 );

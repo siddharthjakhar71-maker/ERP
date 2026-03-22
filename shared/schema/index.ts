@@ -16,7 +16,6 @@ export const users = sqliteTable('users', {
   ...timestamps,
 });
 
-
 export const passwordResets = sqliteTable('password_resets', {
   id: text('id').primaryKey(),
   userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
@@ -108,7 +107,8 @@ export const vendorMaterialRates = sqliteTable('vendor_material_rates', {
   ...timestamps,
 });
 
-export const purchaseOrderStatuses = ['draft', 'approved', 'partial', 'completed', 'cancelled'] as const;
+export const purchaseOrderStatuses = ['draft', 'issued', 'partially_received', 'received', 'cancelled', 'approved', 'partial', 'completed'] as const;
+export const grnStatuses = ['draft', 'posted'] as const;
 
 export const purchaseOrders = sqliteTable('purchase_orders', {
   id: text('id').primaryKey(),
@@ -149,10 +149,13 @@ export const grns = sqliteTable('grns', {
   id: text('id').primaryKey(),
   grnNumber: text('grn_number').notNull().unique(),
   purchaseOrderId: text('purchase_order_id').notNull().references(() => purchaseOrders.id),
+  vendorId: text('vendor_id').notNull().references(() => vendors.id),
+  siteId: text('site_id').notNull().references(() => sites.id),
+  grnDate: integer('grn_date', { mode: 'timestamp' }).notNull(),
   receivedAt: integer('received_at', { mode: 'timestamp' }).notNull(),
   invoiceNumber: text('invoice_number'),
   invoiceDate: integer('invoice_date', { mode: 'timestamp' }),
-  status: text('status', { enum: ['draft', 'received', 'quality_hold', 'closed'] }).notNull().default('draft'),
+  status: text('status', { enum: grnStatuses }).notNull().default('draft'),
   notes: text('notes'),
   createdBy: text('created_by').references(() => users.id),
   ...timestamps,
@@ -160,10 +163,15 @@ export const grns = sqliteTable('grns', {
 
 export const grnItems = sqliteTable('grn_items', {
   id: text('id').primaryKey(),
-  grnId: text('grn_id').notNull().references(() => grns.id),
+  grnId: text('grn_id').notNull().references(() => grns.id, { onDelete: 'cascade' }),
   purchaseOrderItemId: text('purchase_order_item_id').notNull().references(() => purchaseOrderItems.id),
-  acceptedQty: real('accepted_qty').notNull().default(0),
-  rejectedQty: real('rejected_qty').notNull().default(0),
+  materialId: text('material_id').notNull().references(() => materials.id),
+  description: text('description').notNull(),
+  orderedQty: real('ordered_qty').notNull().default(0),
+  previouslyReceivedQty: real('previously_received_qty').notNull().default(0),
+  pendingQty: real('pending_qty').notNull().default(0),
+  receivedQty: real('received_qty').notNull().default(0),
+  unit: text('unit').notNull().default(''),
   remarks: text('remarks'),
   ...timestamps,
 });
@@ -236,7 +244,6 @@ export const notifications = sqliteTable('notifications', {
   ...timestamps,
 });
 
-
 export const userRelations = relations(users, ({ one, many }) => ({
   profile: one(userProfiles, { fields: [users.id], references: [userProfiles.userId] }),
   passwordResets: many(passwordResets),
@@ -251,17 +258,20 @@ export const vendorRelations = relations(vendors, ({ many }) => ({
   bills: many(bills),
   payments: many(payments),
   materialRates: many(vendorMaterialRates),
+  grns: many(grns),
 }));
 
 export const materialRelations = relations(materials, ({ many }) => ({
   rates: many(vendorMaterialRates),
   purchaseOrderItems: many(purchaseOrderItems),
+  grnItems: many(grnItems),
   billItems: many(billItems),
   stockLedger: many(stockLedger),
 }));
 
 export const siteRelations = relations(sites, ({ many }) => ({
   purchaseOrders: many(purchaseOrders),
+  grns: many(grns),
   stockLedger: many(stockLedger),
 }));
 
@@ -279,8 +289,26 @@ export const purchaseOrderItemRelations = relations(purchaseOrderItems, ({ one, 
   grnItems: many(grnItems),
 }));
 
+export const grnRelations = relations(grns, ({ one, many }) => ({
+  purchaseOrder: one(purchaseOrders, { fields: [grns.purchaseOrderId], references: [purchaseOrders.id] }),
+  vendor: one(vendors, { fields: [grns.vendorId], references: [vendors.id] }),
+  site: one(sites, { fields: [grns.siteId], references: [sites.id] }),
+  items: many(grnItems),
+}));
+
+export const grnItemRelations = relations(grnItems, ({ one }) => ({
+  grn: one(grns, { fields: [grnItems.grnId], references: [grns.id] }),
+  purchaseOrderItem: one(purchaseOrderItems, { fields: [grnItems.purchaseOrderItemId], references: [purchaseOrderItems.id] }),
+  material: one(materials, { fields: [grnItems.materialId], references: [materials.id] }),
+}));
+
 export type PurchaseOrderStatus = (typeof purchaseOrderStatuses)[number];
 export type PurchaseOrder = typeof purchaseOrders.$inferSelect;
 export type NewPurchaseOrder = typeof purchaseOrders.$inferInsert;
 export type PurchaseOrderItem = typeof purchaseOrderItems.$inferSelect;
 export type NewPurchaseOrderItem = typeof purchaseOrderItems.$inferInsert;
+export type GrnStatus = (typeof grnStatuses)[number];
+export type Grn = typeof grns.$inferSelect;
+export type NewGrn = typeof grns.$inferInsert;
+export type GrnItem = typeof grnItems.$inferSelect;
+export type NewGrnItem = typeof grnItems.$inferInsert;

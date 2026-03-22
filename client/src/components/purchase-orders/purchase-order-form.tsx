@@ -21,7 +21,7 @@ const formSchema = z.object({
   billingAddress: z.string().optional().default(''),
   shippingAddress: z.string().optional().default(''),
   discountAmount: numberField,
-  status: z.enum(['draft', 'approved', 'partial', 'completed', 'cancelled']),
+  status: z.enum(['draft', 'issued', 'partially_received', 'received', 'cancelled']),
   remarks: z.string().optional().default(''),
 });
 
