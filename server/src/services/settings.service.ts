@@ -67,6 +67,16 @@ const defaultLayoutSettings: PoLayoutSettings = {
   },
   totalsBlockWidth: 190,
   layoutDensity: 'standard',
+  blockRows: [
+    { id: 'row-1', columns: 1, blocks: [{ id: 'header-1', key: 'header', span: 1, visible: true }] },
+    { id: 'row-2', columns: 1, blocks: [{ id: 'poDetails-1', key: 'poDetails', span: 1, visible: true }] },
+    { id: 'row-3', columns: 2, blocks: [{ id: 'vendorDetails-1', key: 'vendorDetails', span: 2, visible: true }, { id: 'billTo-1', key: 'billTo', span: 1, visible: true }, { id: 'shipTo-1', key: 'shipTo', span: 1, visible: true }] },
+    { id: 'row-4', columns: 1, blocks: [{ id: 'lineItems-1', key: 'lineItems', span: 1, visible: true }] },
+    { id: 'row-5', columns: 1, blocks: [{ id: 'totals-1', key: 'totals', span: 1, visible: true }] },
+    { id: 'row-6', columns: 1, blocks: [{ id: 'amountInWords-1', key: 'amountInWords', span: 1, visible: true }] },
+    { id: 'row-7', columns: 1, blocks: [{ id: 'terms-1', key: 'terms', span: 1, visible: true }] },
+    { id: 'row-8', columns: 1, blocks: [{ id: 'footer-1', key: 'footer', span: 1, visible: true }] },
+  ],
 };
 
 const parseJson = <T>(value: string | null, fallback: T): T => {

@@ -99,6 +99,21 @@ export interface PoTemplateSettings {
   visibleLineItemColumns: Array<'index' | 'description' | 'unit' | 'quantity' | 'rate' | 'amount'>;
 }
 
+export type PoPdfBlockKey = 'header' | 'poDetails' | 'vendorDetails' | 'billTo' | 'shipTo' | 'lineItems' | 'totals' | 'amountInWords' | 'terms' | 'footer';
+
+export interface PurchaseOrderPdfBlockConfig {
+  id: string;
+  key: PoPdfBlockKey;
+  span: number;
+  visible: boolean;
+}
+
+export interface PoPdfLayoutRow {
+  id: string;
+  columns: 1 | 2 | 3;
+  blocks: PurchaseOrderPdfBlockConfig[];
+}
+
 export interface PoLayoutSettings {
   pageMarginX: number;
   pageMarginTop: number;
@@ -110,6 +125,7 @@ export interface PoLayoutSettings {
   lineItemColumnWidths: Record<'index' | 'description' | 'unit' | 'quantity' | 'rate' | 'amount', number>;
   totalsBlockWidth: number;
   layoutDensity: 'compact' | 'standard';
+  blockRows: PoPdfLayoutRow[];
 }
 
 export interface SettingsRecord {
