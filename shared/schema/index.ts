@@ -62,6 +62,19 @@ export const vendors = sqliteTable('vendors', {
   ...timestamps,
 });
 
+export const materials = sqliteTable('materials', {
+  id: text('id').primaryKey(),
+  sku: text('sku').notNull().unique(),
+  name: text('name').notNull(),
+  category: text('category').notNull(),
+  unit: text('unit').notNull(),
+  description: text('description'),
+  reorderLevel: real('reorder_level').notNull().default(0),
+  status: text('status', { enum: ['active', 'inactive'] }).notNull().default('active'),
+  createdBy: text('created_by').references(() => users.id),
+  ...timestamps,
+});
+
 export const sites = sqliteTable('sites', {
   id: text('id').primaryKey(),
   code: text('code').notNull().unique(),
@@ -72,19 +85,6 @@ export const sites = sqliteTable('sites', {
   state: text('state'),
   postalCode: text('postal_code'),
   projectManager: text('project_manager'),
-  status: text('status', { enum: ['active', 'inactive'] }).notNull().default('active'),
-  createdBy: text('created_by').references(() => users.id),
-  ...timestamps,
-});
-
-export const materials = sqliteTable('materials', {
-  id: text('id').primaryKey(),
-  sku: text('sku').notNull().unique(),
-  name: text('name').notNull(),
-  category: text('category').notNull(),
-  unit: text('unit').notNull(),
-  description: text('description'),
-  reorderLevel: real('reorder_level').notNull().default(0),
   status: text('status', { enum: ['active', 'inactive'] }).notNull().default('active'),
   createdBy: text('created_by').references(() => users.id),
   ...timestamps,
@@ -276,10 +276,33 @@ export const billsRelations = relations(bills, ({ one, many }) => ({
   payments: many(payments),
 }));
 
+export const schema = {
+  users,
+  userProfiles,
+  systemSettings,
+  vendors,
+  materials,
+  sites,
+  vendorMaterialRates,
+  purchaseOrders,
+  purchaseOrderItems,
+  grns,
+  grnItems,
+  bills,
+  billItems,
+  payments,
+  stockLedger,
+  notifications,
+  auditLogs,
+};
+
 export type User = typeof users.$inferSelect;
 export type Vendor = typeof vendors.$inferSelect;
+export type VendorInsert = typeof vendors.$inferInsert;
 export type Site = typeof sites.$inferSelect;
+export type SiteInsert = typeof sites.$inferInsert;
 export type Material = typeof materials.$inferSelect;
+export type MaterialInsert = typeof materials.$inferInsert;
 export type PurchaseOrder = typeof purchaseOrders.$inferSelect;
 export type PurchaseOrderItem = typeof purchaseOrderItems.$inferSelect;
 export type Grn = typeof grns.$inferSelect;

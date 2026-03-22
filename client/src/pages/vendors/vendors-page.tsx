@@ -1,81 +1,135 @@
 import { useMemo, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { EmptyState } from '@/components/shared/empty-state';
+import { ConfirmDeleteDialog } from '@/components/shared/confirm-delete-dialog';
 import { DataTable } from '@/components/shared/data-table';
+import { FormModal } from '@/components/shared/form-modal';
+import { ModuleToolbar } from '@/components/shared/module-toolbar';
 import { PageHeader } from '@/components/shared/page-header';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { currency } from '@/lib/utils';
-import { useVendors } from '@/hooks/use-vendors';
+import { useCreateVendor, useDeleteVendor, useUpdateVendor, useVendors } from '@/hooks/use-vendors';
 import { VendorForm } from './vendor-form';
-import type { VendorRecord } from '@/types';
+import type { VendorPayload, VendorRecord, VendorStatus } from '@/types';
 
 export const VendorsPage = () => {
-  const [status, setStatus] = useState<string>('');
+  const [status, setStatus] = useState<VendorStatus | ''>('');
   const [query, setQuery] = useState('');
+  const [selectedVendor, setSelectedVendor] = useState<VendorRecord | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const { data = [], isLoading } = useVendors(status || undefined);
+  const [vendorToDelete, setVendorToDelete] = useState<VendorRecord | null>(null);
 
-  const rows = useMemo(
-    () => data.filter((vendor) => [vendor.name, vendor.code, vendor.city].join(' ').toLowerCase().includes(query.toLowerCase())),
-    [data, query],
-  );
+  const { data = [], isLoading, error } = useVendors({ status, q: query.trim() || undefined });
+  const createVendor = useCreateVendor();
+  const updateVendor = useUpdateVendor();
+  const deleteVendor = useDeleteVendor();
+
+  const rows = useMemo(() => data, [data]);
+
+  const closeForm = () => {
+    setShowForm(false);
+    setSelectedVendor(null);
+  };
+
+  const handleSubmit = async (values: VendorPayload) => {
+    if (selectedVendor) {
+      await updateVendor.mutateAsync({ id: selectedVendor.id, payload: values });
+    } else {
+      await createVendor.mutateAsync(values);
+    }
+    closeForm();
+  };
 
   return (
     <div className="space-y-8">
       <PageHeader
         title="Vendor management"
-        description="Centralize supplier onboarding, commercial terms, payment exposure, and recent procurement touchpoints."
+        description="Manage supplier masters with live ERP data, onboarding controls, payment terms, and day-to-day CRUD operations."
         actions={
-          <Button onClick={() => setShowForm((value) => !value)}>
+          <Button onClick={() => setShowForm(true)}>
             <Plus className="mr-2 h-4 w-4" />
-            {showForm ? 'Close form' : 'Add vendor'}
+            Add vendor
           </Button>
         }
       />
-      {showForm ? (
-        <Card className="p-6">
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold">Create vendor</h3>
-            <p className="text-sm text-muted-foreground">Store essential vendor, contact, and payment configuration data.</p>
-          </div>
-          <VendorForm />
-        </Card>
-      ) : null}
-      <Card className="p-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-1 flex-col gap-4 sm:flex-row">
-            <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by vendor name, code, or city" />
-            <select
-              className="h-11 rounded-2xl border border-input bg-background px-4 text-sm"
-              value={status}
-              onChange={(event) => setStatus(event.target.value)}
-            >
+
+      <ModuleToolbar
+        filters={(
+          <>
+            <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by vendor name, code, city, or contact" />
+            <select className="h-11 rounded-2xl border border-input bg-background px-4 text-sm" value={status} onChange={(event) => setStatus(event.target.value as VendorStatus | '')}>
               <option value="">All statuses</option>
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
               <option value="on_hold">On Hold</option>
             </select>
-          </div>
-          <div className="rounded-2xl bg-muted px-4 py-3 text-sm text-muted-foreground">{rows.length} vendors in view</div>
-        </div>
-      </Card>
-      {isLoading ? (
-        <div className="text-sm text-muted-foreground">Loading vendors...</div>
-      ) : (
+          </>
+        )}
+        meta={`${rows.length} vendors in view`}
+      />
+
+      {isLoading ? <div className="text-sm text-muted-foreground">Loading vendors...</div> : null}
+      {error ? <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">Failed to load vendors.</div> : null}
+      {!isLoading && !error && rows.length === 0 ? (
+        <EmptyState title="No vendors found" description="Add your first vendor or widen the current filters to see supplier records." />
+      ) : null}
+      {!isLoading && !error && rows.length > 0 ? (
         <DataTable<VendorRecord>
           rows={rows}
           columns={[
             { key: 'name', title: 'Vendor', render: (row) => <div><p className="font-medium">{row.name}</p><p className="text-xs text-muted-foreground">{row.code}</p></div> },
             { key: 'contactPerson', title: 'Contact', render: (row) => <div><p>{row.contactPerson}</p><p className="text-xs text-muted-foreground">{row.email}</p></div> },
-            { key: 'city', title: 'Location' },
+            { key: 'city', title: 'Location', render: (row) => <div><p>{row.city}</p><p className="text-xs text-muted-foreground">{row.state || '—'}</p></div> },
             { key: 'paymentTermsDays', title: 'Payment Terms', render: (row) => `${row.paymentTermsDays} days` },
             { key: 'outstandingBalance', title: 'Outstanding', render: (row) => currency.format(row.outstandingBalance) },
             { key: 'status', title: 'Status', render: (row) => <StatusBadge status={row.status} /> },
+            {
+              key: 'actions',
+              title: 'Actions',
+              className: 'w-36',
+              render: (row) => (
+                <div className="flex gap-2">
+                  <Button type="button" variant="outline" className="h-9 px-3" onClick={() => { setSelectedVendor(row); setShowForm(true); }}>
+                    <Pencil className="mr-2 h-4 w-4" /> Edit
+                  </Button>
+                  <Button type="button" variant="outline" className="h-9 px-3 text-destructive hover:text-destructive" onClick={() => setVendorToDelete(row)}>
+                    <Trash2 className="mr-2 h-4 w-4" /> Delete
+                  </Button>
+                </div>
+              ),
+            },
           ]}
         />
-      )}
+      ) : null}
+
+      <FormModal
+        open={showForm}
+        onOpenChange={(open) => { if (!open) closeForm(); else setShowForm(open); }}
+        title={selectedVendor ? 'Edit vendor' : 'Add vendor'}
+        description={selectedVendor ? 'Update vendor master data and commercial terms.' : 'Create a production-ready vendor master record.'}
+      >
+        <VendorForm
+          vendor={selectedVendor}
+          isSubmitting={createVendor.isPending || updateVendor.isPending}
+          onCancel={closeForm}
+          onSubmit={handleSubmit}
+        />
+      </FormModal>
+
+      <ConfirmDeleteDialog
+        open={Boolean(vendorToDelete)}
+        onOpenChange={(open) => { if (!open) setVendorToDelete(null); }}
+        title="Delete vendor"
+        description={`This will permanently remove ${vendorToDelete?.name ?? 'this vendor'} from the ERP master data.`}
+        isDeleting={deleteVendor.isPending}
+        onConfirm={async () => {
+          if (!vendorToDelete) return;
+          await deleteVendor.mutateAsync(vendorToDelete.id);
+          setVendorToDelete(null);
+        }}
+      />
     </div>
   );
 };
