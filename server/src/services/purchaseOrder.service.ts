@@ -13,6 +13,7 @@ const buildSearch = (query?: string) => {
 };
 
 const round = (value: number) => Number(value.toFixed(2));
+const normalizePoStatus = (status: string) => ({ approved: 'issued', partial: 'partially_received', completed: 'received' }[status] ?? status);
 
 const computeTotals = (input: PurchaseOrderPayload) => {
   const items = input.items.map((item) => {
@@ -80,6 +81,7 @@ export class PurchaseOrderService {
 
     return rows.map((row) => ({
       ...row,
+      status: normalizePoStatus(row.status),
       itemCount: itemCounts.filter((item) => item.purchaseOrderId === row.id).length,
       vendor: { id: row.vendorId, name: row.vendorName, vendorCode: row.vendorCode },
       site: { id: row.siteId, name: row.siteName, siteCode: row.siteCode },
@@ -148,6 +150,7 @@ export class PurchaseOrderService {
 
     return {
       ...header,
+      status: normalizePoStatus(header.status),
       vendor: {
         id: header.vendorId,
         name: header.vendorName,
