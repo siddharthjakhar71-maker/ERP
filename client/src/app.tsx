@@ -1,4 +1,5 @@
-import { Outlet, RouterProvider, createRootRoute, createRoute, createRouter, redirect } from '@tanstack/react-router';
+import { useEffect } from 'react';
+import { Outlet, RouterProvider, createRootRoute, createRoute, createRouter, redirect, useNavigate } from '@tanstack/react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from 'next-themes';
 import { Toaster } from 'sonner';
@@ -17,15 +18,47 @@ import { useAuthStore } from '@/store/auth-store';
 
 const queryClient = new QueryClient();
 
+const ProtectedApp = () => {
+  const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+
+  useEffect(() => {
+    if (!user) {
+      void navigate({ to: '/login', replace: true });
+    }
+  }, [navigate, user]);
+
+  if (!user) {
+    return null;
+  }
+
+  return (
+    <AppShell>
+      <Outlet />
+    </AppShell>
+  );
+};
+
 const rootRoute = createRootRoute({ component: () => <Outlet /> });
-const authRoute = createRoute({ getParentRoute: () => rootRoute, path: '/login', component: LoginPage });
+const authRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/login',
+  beforeLoad: () => {
+    if (useAuthStore.getState().user) {
+      throw redirect({ to: '/' });
+    }
+  },
+  component: LoginPage,
+});
 const appRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: 'app',
   beforeLoad: () => {
-    if (!useAuthStore.getState().isAuthenticated) throw redirect({ to: '/login' });
+    if (!useAuthStore.getState().user) {
+      throw redirect({ to: '/login' });
+    }
   },
-  component: () => <AppShell><Outlet /></AppShell>,
+  component: ProtectedApp,
 });
 
 const dashboardRoute = createRoute({ getParentRoute: () => appRoute, path: '/', component: DashboardPage });

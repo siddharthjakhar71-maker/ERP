@@ -2,13 +2,15 @@ import { Bell, ChevronsLeftRight, LogOut, MoonStar, Search, SunMedium } from 'lu
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useLogout } from '@/hooks/use-logout';
 import { useAuthStore } from '@/store/auth-store';
 import { useUiStore } from '@/store/ui-store';
 
 export const Header = () => {
   const { setTheme, resolvedTheme } = useTheme();
   const { toggleSidebar } = useUiStore();
-  const { user, logout } = useAuthStore();
+  const logout = useLogout();
+  const user = useAuthStore((state) => state.user);
 
   return (
     <header className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-border bg-background/90 px-6 py-4 backdrop-blur">
