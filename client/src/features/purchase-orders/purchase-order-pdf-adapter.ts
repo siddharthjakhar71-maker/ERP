@@ -31,7 +31,7 @@ const currency = (value: number) => new Intl.NumberFormat('en-IN', {
   style: 'currency',
   currency: 'INR',
   maximumFractionDigits: 2,
-}).format(value).replace(/₹|â‚¹/g, '\u20B9');
+}).format(value).replace(/₹|â‚¹/g, 'Rs.');
 
 const toDate = (value?: string | null) => value ? new Date(value).toLocaleDateString('en-IN') : 'Not set';
 const compactLines = (...values: Array<string | null | undefined>) => values.map((value) => value?.trim()).filter((value): value is string => Boolean(value));

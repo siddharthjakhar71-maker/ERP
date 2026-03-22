@@ -3,13 +3,19 @@ import type { PurchaseOrderPdfDocument } from './purchase-order-pdf-adapter';
 const PAGE_WIDTH = 595;
 const PAGE_HEIGHT = 842;
 const MARGIN_X = 40;
-const MARGIN_TOP = 48;
+const MARGIN_TOP = 44;
 const MARGIN_BOTTOM = 42;
 const FONT_SIZE = 9;
+const SMALL_FONT_SIZE = 8;
 const LINE_HEIGHT = 12;
 const CHAR_WIDTH_FACTOR = 0.52;
 const PRINT_WIDTH = PAGE_WIDTH - (MARGIN_X * 2);
 const DEFAULT_PADDING = 8;
+const SECTION_GAP = 12;
+const BOX_TITLE_HEIGHT = 20;
+const LIGHT_FILL = 0.95;
+const BORDER_GRAY = 0.55;
+const TEXT_GRAY = 0;
 const COMPANY_INFO = [
   'JAKHIRA ERP',
   'Procurement Management System',
@@ -17,20 +23,27 @@ const COMPANY_INFO = [
   'Phone: +91 98765 43210',
 ];
 
+const EMPTY_VALUE = 'Not provided';
+
 type PdfPage = string[];
 type FontName = 'F1' | 'F2';
 type Align = 'left' | 'center' | 'right';
 
 type TableColumn = {
-  key: 'index' | 'material' | 'description' | 'quantity' | 'unit' | 'rate' | 'tax' | 'amount';
+  key: 'index' | 'description' | 'unit' | 'quantity' | 'rate' | 'amount';
   label: string;
   width: number;
   align?: Align;
 };
 
-type CellBlock = {
-  title: string;
-  lines: string[];
+type LabeledValue = {
+  label: string;
+  value: string;
+};
+
+type BoxOptions = {
+  title?: string;
+  shadedTitle?: boolean;
 };
 
 const escapePdfText = (value: string) => value
@@ -38,23 +51,23 @@ const escapePdfText = (value: string) => value
   .replace(/\(/g, '\\(')
   .replace(/\)/g, '\\)')
   .replace(/\r?\n/g, ' ');
-const toPdfString = (value: string) => {
-  if (/[^\x00-\x7F]/.test(value)) {
-    const utf16 = new Uint16Array(value.length + 1);
-    utf16[0] = 0xfeff;
-    for (let index = 0; index < value.length; index += 1) utf16[index + 1] = value.charCodeAt(index);
-    const hex = Array.from(utf16).map((code) => code.toString(16).padStart(4, '0')).join('');
-    return `<${hex}>`;
-  }
-  return `(${escapePdfText(value)})`;
-};
+
+const sanitizeText = (value: string) => value
+  .replace(/[\u2013\u2014]/g, '-')
+  .replace(/[\u2018\u2019]/g, "'")
+  .replace(/[\u201C\u201D]/g, '"')
+  .replace(/₹|â‚¹/g, 'Rs.')
+  .replace(/[^\x20-\x7E]/g, ' ')
+  .replace(/\s+/g, ' ')
+  .trim();
+
+const toPdfString = (value: string) => `(${escapePdfText(sanitizeText(value))})`;
 const blobFromBytes = (bytes: Uint8Array) => new Blob([bytes], { type: 'application/pdf' });
-const textWidth = (text: string, size = FONT_SIZE) => text.length * size * CHAR_WIDTH_FACTOR;
-const sanitizeText = (value: string) => value.replace(/[\u2013\u2014]/g, '-').replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"');
-const formatCurrency = (value: string) => sanitizeText(value).replace(/₹|â‚¹/g, '₹');
+const textWidth = (text: string, size = FONT_SIZE) => sanitizeText(text).length * size * CHAR_WIDTH_FACTOR;
+const formatCurrency = (value: string) => sanitizeText(value).replace(/Rs\.\s*/g, 'Rs. ');
 
 const wrapText = (text: string, maxWidth: number, size = FONT_SIZE) => {
-  const normalized = sanitizeText(text).replace(/\s+/g, ' ').trim();
+  const normalized = sanitizeText(text);
   if (!normalized) return [''];
 
   const words = normalized.split(' ');
@@ -142,10 +155,100 @@ const downloadBlob = (blob: Blob, filename: string) => {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 
+const extractFieldValue = (lines: string[], prefixes: string[]) => {
+  const match = lines.find((line) => prefixes.some((prefix) => line.toLowerCase().startsWith(prefix.toLowerCase())));
+  if (!match) return '';
+  const separatorIndex = match.indexOf(':');
+  return separatorIndex >= 0 ? match.slice(separatorIndex + 1).trim() : match.trim();
+};
+
+const splitVendorDetails = (lines: string[]) => {
+  const [vendorName = EMPTY_VALUE, ...rest] = lines;
+  const addressLines = rest.filter((line) => !/^(Code|Phone|Email):/i.test(line));
+  return {
+    vendorName,
+    address: addressLines.length ? addressLines.join(', ') : EMPTY_VALUE,
+    contactPerson: EMPTY_VALUE,
+    phone: extractFieldValue(lines, ['Phone:']) || EMPTY_VALUE,
+    email: extractFieldValue(lines, ['Email:']) || EMPTY_VALUE,
+  };
+};
+
+const splitProjectDetails = (lines: string[]) => {
+  const [projectName = EMPTY_VALUE, ...rest] = lines;
+  const addressLines = rest.filter((line) => !/^(Code|Location):/i.test(line));
+  return {
+    projectName,
+    projectAddress: addressLines.length ? addressLines.join(', ') : EMPTY_VALUE,
+  };
+};
+
+const parseAmountNumber = (value: string) => {
+  const numeric = Number.parseFloat(value.replace(/[^0-9.-]/g, ''));
+  return Number.isFinite(numeric) ? numeric : 0;
+};
+
+const numberToWordsBelowThousand = (value: number) => {
+  const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
+  const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+  const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+  const parts: string[] = [];
+  const hundreds = Math.floor(value / 100);
+  const remainder = value % 100;
+
+  if (hundreds) parts.push(`${ones[hundreds]} Hundred`);
+  if (remainder >= 20) {
+    parts.push(`${tens[Math.floor(remainder / 10)]}${remainder % 10 ? ` ${ones[remainder % 10]}` : ''}`.trim());
+  } else if (remainder >= 10) {
+    parts.push(teens[remainder - 10]);
+  } else if (remainder > 0) {
+    parts.push(ones[remainder]);
+  }
+
+  return parts.join(' ').trim();
+};
+
+const numberToIndianWords = (value: number) => {
+  if (value === 0) return 'Zero';
+
+  const segments: Array<[number, string]> = [
+    [10000000, 'Crore'],
+    [100000, 'Lakh'],
+    [1000, 'Thousand'],
+  ];
+
+  let remainder = value;
+  const parts: string[] = [];
+
+  segments.forEach(([divisor, label]) => {
+    if (remainder >= divisor) {
+      const segmentValue = Math.floor(remainder / divisor);
+      parts.push(`${numberToWordsBelowThousand(segmentValue)} ${label}`.trim());
+      remainder %= divisor;
+    }
+  });
+
+  if (remainder > 0) parts.push(numberToWordsBelowThousand(remainder));
+  return parts.join(' ').trim();
+};
+
+const amountToWords = (amount: string) => {
+  const numeric = parseAmountNumber(amount);
+  const rupees = Math.floor(numeric);
+  const paise = Math.round((numeric - rupees) * 100);
+  const rupeeWords = numberToIndianWords(rupees);
+  if (paise > 0) return `Amount in Words: Rupees ${rupeeWords} and ${numberToIndianWords(paise)} Paise Only`;
+  return `Amount in Words: Rupees ${rupeeWords} Only`;
+};
+
 export const downloadPurchaseOrderPdf = (doc: PurchaseOrderPdfDocument) => {
   const pages: PdfPage[] = [[]];
   let currentPage = pages[0];
   let y = PAGE_HEIGHT - MARGIN_TOP;
+
+  const projectDetails = splitProjectDetails(doc.siteDetails);
+  const vendorDetails = splitVendorDetails(doc.vendorDetails);
 
   const push = (command: string) => currentPage.push(command);
   const line = (x1: number, y1: number, x2: number, y2: number) => push(`${x1} ${y1} m ${x2} ${y2} l S`);
@@ -173,8 +276,8 @@ export const downloadPurchaseOrderPdf = (doc: PurchaseOrderPdfDocument) => {
     y = PAGE_HEIGHT - MARGIN_TOP;
   };
 
-  const ensureSpace = (needed: number, reserveFooter = 0) => {
-    if (y - needed >= MARGIN_BOTTOM + reserveFooter) return;
+  const ensureSpace = (needed: number) => {
+    if (y - needed >= MARGIN_BOTTOM) return;
     newPage();
   };
 
@@ -192,240 +295,328 @@ export const downloadPurchaseOrderPdf = (doc: PurchaseOrderPdfDocument) => {
     return lines.length * localLineHeight;
   };
 
-  const getBlockHeight = (title: string, lines: string[], width: number) => {
-    const titleHeight = LINE_HEIGHT + 4;
-    const contentHeight = lines.reduce((total, lineText) => total + (wrapText(lineText, width - (DEFAULT_PADDING * 2)).length * LINE_HEIGHT), 0);
-    return Math.max(56, DEFAULT_PADDING + titleHeight + contentHeight + DEFAULT_PADDING);
+  const measureLabeledValue = (field: LabeledValue, width: number) => {
+    const labelWidth = Math.min(width * 0.36, 110);
+    const valueWidth = width - labelWidth - 6;
+    const valueLines = wrapText(field.value || EMPTY_VALUE, valueWidth, FONT_SIZE);
+    return Math.max(LINE_HEIGHT, valueLines.length * LINE_HEIGHT);
   };
 
-  const drawTwoColumnSection = (left: CellBlock, right: CellBlock) => {
-    const gap = 18;
-    const columnWidth = (PRINT_WIDTH - gap) / 2;
-    const leftHeight = getBlockHeight(left.title, left.lines, columnWidth);
-    const rightHeight = getBlockHeight(right.title, right.lines, columnWidth);
-    const sectionHeight = Math.max(leftHeight, rightHeight);
-    ensureSpace(sectionHeight + 12);
+  const drawLabeledValue = (field: LabeledValue, x: number, top: number, width: number) => {
+    const labelWidth = Math.min(width * 0.36, 110);
+    const valueX = x + labelWidth + 6;
+    const valueWidth = width - labelWidth - 6;
+    drawText(field.label, x, top - FONT_SIZE, { font: 'F2', size: FONT_SIZE });
+    const usedHeight = drawWrappedText(field.value || EMPTY_VALUE, valueX, top, valueWidth, { size: FONT_SIZE, lineHeight: LINE_HEIGHT });
+    return Math.max(LINE_HEIGHT, usedHeight);
+  };
 
-    const top = y;
+  const drawBox = (top: number, height: number, x = MARGIN_X, width = PRINT_WIDTH, options?: BoxOptions) => {
     setLineWidth(0.6);
-    setStrokeGray(0.35);
-    rect(MARGIN_X, top, columnWidth, sectionHeight);
-    rect(MARGIN_X + columnWidth + gap, top, columnWidth, sectionHeight);
-
-    const drawCell = (cell: CellBlock, x: number) => {
-      setFillGray(0.96);
-      rect(x, top, columnWidth, 24, true);
-      setFillGray(0);
-      drawText(cell.title, x + DEFAULT_PADDING, top - 16, { font: 'F2', size: 10 });
-      let cursorTop = top - 32;
-      for (const lineText of cell.lines) {
-        cursorTop -= drawWrappedText(lineText, x + DEFAULT_PADDING, cursorTop, columnWidth - (DEFAULT_PADDING * 2), { size: FONT_SIZE, lineHeight: LINE_HEIGHT }) - LINE_HEIGHT;
-        cursorTop -= 2;
+    setStrokeGray(BORDER_GRAY);
+    rect(x, top, width, height, false);
+    if (options?.title) {
+      if (options.shadedTitle !== false) {
+        setFillGray(LIGHT_FILL);
+        rect(x, top, width, BOX_TITLE_HEIGHT, true);
+        setFillGray(TEXT_GRAY);
       }
-    };
-
-    drawCell(left, MARGIN_X);
-    drawCell(right, MARGIN_X + columnWidth + gap);
-    y -= sectionHeight + 14;
+      drawText(options.title, x + DEFAULT_PADDING, top - 14, { font: 'F2', size: 10 });
+    }
   };
 
-  const drawHeader = () => {
-    const headerTop = y;
-    const leftWidth = PRINT_WIDTH * 0.54;
-    const rightWidth = PRINT_WIDTH - leftWidth;
-    const companyLines = COMPANY_INFO;
-    const metaLines = [
-      ['PO Number', doc.poNumber],
-      ['Order Date', doc.orderDate],
-      ['Status', doc.status],
-      ['Expected Date', doc.expectedDate],
-    ] as const;
-    const companyHeight = 22 + companyLines.reduce((sum, lineText) => sum + (wrapText(lineText, leftWidth - 4, lineText === COMPANY_INFO[0] ? 15 : FONT_SIZE).length * (lineText === COMPANY_INFO[0] ? 16 : LINE_HEIGHT)), 0);
-    const metaHeight = 34 + (metaLines.length * 18);
-    const headerHeight = Math.max(companyHeight, metaHeight) + 12;
+  function drawHeader() {
+    const leftWidth = PRINT_WIDTH * 0.55;
+    const metaRows: LabeledValue[] = [
+      { label: 'PO Number', value: doc.poNumber },
+      { label: 'Date', value: doc.orderDate },
+      { label: 'Status', value: doc.status },
+    ];
+
+    const companyHeights = [18, ...COMPANY_INFO.slice(1).map((lineText) => wrapText(lineText, leftWidth - 4, SMALL_FONT_SIZE).length * 10)];
+    const companyHeight = companyHeights.reduce((sum, height) => sum + height, 0) + 10;
+    const metaHeight = 24 + (metaRows.length * 16);
+    const headerHeight = Math.max(companyHeight, metaHeight);
     ensureSpace(headerHeight + 18);
 
-    let leftCursor = headerTop;
-    drawText(COMPANY_INFO[0], MARGIN_X, leftCursor - 16, { font: 'F2', size: 15 });
-    leftCursor -= 26;
-    for (const infoLine of COMPANY_INFO.slice(1)) {
-      leftCursor -= drawWrappedText(infoLine, MARGIN_X, leftCursor, leftWidth - 8, { size: FONT_SIZE }) - LINE_HEIGHT;
-      leftCursor -= 2;
-    }
-
-    const rightX = MARGIN_X + leftWidth;
-    drawText('PURCHASE ORDER', PAGE_WIDTH - MARGIN_X, headerTop - 18, { font: 'F2', size: 16, align: 'right' });
-    let metaY = headerTop - 42;
-    metaLines.forEach(([label, value]) => {
-      drawText(`${label}:`, rightX, metaY, { font: 'F2', size: 9 });
-      drawWrappedText(value, rightX + 78, metaY + 9, rightWidth - 78, { size: 9 });
-      metaY -= 18;
+    const top = y;
+    let leftCursor = top;
+    drawText(COMPANY_INFO[0], MARGIN_X, leftCursor - 16, { font: 'F2', size: 16 });
+    leftCursor -= 24;
+    COMPANY_INFO.slice(1).forEach((infoLine) => {
+      const usedHeight = drawWrappedText(infoLine, MARGIN_X, leftCursor, leftWidth - 6, { size: SMALL_FONT_SIZE, lineHeight: 10 });
+      leftCursor -= usedHeight + 2;
     });
 
-    y -= headerHeight;
-    setLineWidth(0.9);
-    setStrokeGray(0.5);
+    drawText('PURCHASE ORDER', PAGE_WIDTH - MARGIN_X, top - 18, { font: 'F2', size: 17, align: 'right' });
+    let metaCursor = top - 40;
+    metaRows.forEach((row) => {
+      drawText(`${row.label}:`, MARGIN_X + leftWidth + 28, metaCursor, { font: 'F2', size: 9 });
+      drawText(row.value || EMPTY_VALUE, PAGE_WIDTH - MARGIN_X, metaCursor, { size: 9, align: 'right' });
+      metaCursor -= 16;
+    });
+
+    y = top - headerHeight;
+    setLineWidth(0.8);
+    setStrokeGray(BORDER_GRAY);
     line(MARGIN_X, y, PAGE_WIDTH - MARGIN_X, y);
-    y -= 16;
+    y -= SECTION_GAP;
+  }
+
+  const drawPurchaseOrderDetails = () => {
+    const gap = 16;
+    const columnWidth = (PRINT_WIDTH - gap - (DEFAULT_PADDING * 2)) / 2;
+    const leftFields: LabeledValue[] = [
+      { label: 'Project Name', value: projectDetails.projectName },
+      { label: 'Project Address', value: projectDetails.projectAddress },
+      { label: 'PO Number', value: doc.poNumber },
+    ];
+    const rightFields: LabeledValue[] = [
+      { label: 'PO Date', value: doc.orderDate },
+      { label: 'Billing Name', value: doc.billingAddress[0] || EMPTY_VALUE },
+      { label: 'Billing Address', value: doc.billingAddress.join(', ') || EMPTY_VALUE },
+    ];
+
+    const leftContentHeight = leftFields.reduce((sum, field) => sum + measureLabeledValue(field, columnWidth) + 6, 0);
+    const rightContentHeight = rightFields.reduce((sum, field) => sum + measureLabeledValue(field, columnWidth) + 6, 0);
+    const height = Math.max(84, BOX_TITLE_HEIGHT + DEFAULT_PADDING + Math.max(leftContentHeight, rightContentHeight) + DEFAULT_PADDING);
+    ensureSpace(height + SECTION_GAP);
+
+    const top = y;
+    drawBox(top, height, MARGIN_X, PRINT_WIDTH, { title: 'Purchase Order Details' });
+    const innerX = MARGIN_X + DEFAULT_PADDING;
+    const innerTop = top - BOX_TITLE_HEIGHT - DEFAULT_PADDING + 4;
+    const dividerX = innerX + columnWidth + (gap / 2);
+    line(dividerX, top - BOX_TITLE_HEIGHT, dividerX, top - height + DEFAULT_PADDING);
+
+    let leftCursor = innerTop;
+    leftFields.forEach((field) => {
+      leftCursor -= drawLabeledValue(field, innerX, leftCursor, columnWidth) + 6;
+    });
+
+    let rightCursor = innerTop;
+    rightFields.forEach((field) => {
+      rightCursor -= drawLabeledValue(field, dividerX + (gap / 2), rightCursor, columnWidth) + 6;
+    });
+
+    y -= height + SECTION_GAP;
+  };
+
+  const drawVendorDetails = () => {
+    const fields: LabeledValue[] = [
+      { label: 'Vendor Name', value: vendorDetails.vendorName },
+      { label: 'Address', value: vendorDetails.address },
+      { label: 'Contact Person', value: vendorDetails.contactPerson },
+      { label: 'Phone / Email', value: [vendorDetails.phone, vendorDetails.email].filter(Boolean).join(' / ') || EMPTY_VALUE },
+    ];
+    const contentHeight = fields.reduce((sum, field) => sum + measureLabeledValue(field, PRINT_WIDTH - (DEFAULT_PADDING * 2)) + 6, 0);
+    const height = BOX_TITLE_HEIGHT + DEFAULT_PADDING + contentHeight + DEFAULT_PADDING;
+    ensureSpace(height + SECTION_GAP);
+
+    const top = y;
+    drawBox(top, height, MARGIN_X, PRINT_WIDTH, { title: 'Vendor Details' });
+    let cursor = top - BOX_TITLE_HEIGHT - DEFAULT_PADDING + 4;
+    fields.forEach((field) => {
+      cursor -= drawLabeledValue(field, MARGIN_X + DEFAULT_PADDING, cursor, PRINT_WIDTH - (DEFAULT_PADDING * 2)) + 6;
+    });
+
+    y -= height + SECTION_GAP;
+  };
+
+  const measureAddressBox = (lines: string[], width: number) => {
+    const contentHeight = (lines.length ? lines : [EMPTY_VALUE]).reduce((sum, lineText) => sum + wrapText(lineText, width - (DEFAULT_PADDING * 2), FONT_SIZE).length * LINE_HEIGHT, 0);
+    return BOX_TITLE_HEIGHT + DEFAULT_PADDING + contentHeight + DEFAULT_PADDING;
+  };
+
+  const drawAddressBox = (title: string, lines: string[], x: number, top: number, width: number, height: number) => {
+    drawBox(top, height, x, width, { title });
+    let cursor = top - BOX_TITLE_HEIGHT - DEFAULT_PADDING + 4;
+    (lines.length ? lines : [EMPTY_VALUE]).forEach((lineText) => {
+      const usedHeight = drawWrappedText(lineText, x + DEFAULT_PADDING, cursor, width - (DEFAULT_PADDING * 2), { size: FONT_SIZE, lineHeight: LINE_HEIGHT });
+      cursor -= usedHeight;
+    });
+  };
+
+  const drawBillShipSection = () => {
+    const gap = 16;
+    const boxWidth = (PRINT_WIDTH - gap) / 2;
+    const leftHeight = measureAddressBox(doc.billingAddress, boxWidth);
+    const rightHeight = measureAddressBox(doc.shippingAddress, boxWidth);
+    const height = Math.max(leftHeight, rightHeight, 86);
+    ensureSpace(height + SECTION_GAP);
+
+    const top = y;
+    drawAddressBox('Bill To', doc.billingAddress, MARGIN_X, top, boxWidth, height);
+    drawAddressBox('Ship To', doc.shippingAddress, MARGIN_X + boxWidth + gap, top, boxWidth, height);
+    y -= height + SECTION_GAP;
   };
 
   const tableColumns: TableColumn[] = [
-    { key: 'index', label: '#', width: 26, align: 'center' },
-    { key: 'material', label: 'Material Code / Material', width: 108 },
-    { key: 'description', label: 'Description', width: 141 },
-    { key: 'quantity', label: 'Qty', width: 42, align: 'right' },
-    { key: 'unit', label: 'Unit', width: 42, align: 'center' },
-    { key: 'rate', label: 'Rate', width: 56, align: 'right' },
-    { key: 'tax', label: 'Tax', width: 40, align: 'right' },
-    { key: 'amount', label: 'Amount', width: 60, align: 'right' },
+    { key: 'index', label: 'Sr. No.', width: 42, align: 'center' },
+    { key: 'description', label: 'Description', width: 239, align: 'left' },
+    { key: 'unit', label: 'Unit', width: 46, align: 'center' },
+    { key: 'quantity', label: 'Qty', width: 52, align: 'right' },
+    { key: 'rate', label: 'Unit Price', width: 68, align: 'right' },
+    { key: 'amount', label: 'Amount', width: 68, align: 'right' },
   ];
 
   const drawTableHeader = () => {
-    ensureSpace(30);
     setLineWidth(0.5);
-    setStrokeGray(0.35);
-    setFillGray(0.93);
-    rect(MARGIN_X, y, PRINT_WIDTH, 24, true);
-    setFillGray(0);
-
-    let cursorX = MARGIN_X;
-    tableColumns.forEach((column) => {
-      line(cursorX, y, cursorX, y - 24);
-      drawText(column.label, column.align === 'right' ? cursorX + column.width - 6 : column.align === 'center' ? cursorX + (column.width / 2) : cursorX + 6, y - 15, { font: 'F2', size: 8, align: column.align === 'right' ? 'right' : column.align === 'center' ? 'center' : 'left' });
-      cursorX += column.width;
-    });
-    line(MARGIN_X + PRINT_WIDTH, y, MARGIN_X + PRINT_WIDTH, y - 24);
+    setStrokeGray(BORDER_GRAY);
+    setFillGray(LIGHT_FILL);
+    rect(MARGIN_X, y, PRINT_WIDTH, 22, true);
+    setFillGray(TEXT_GRAY);
     line(MARGIN_X, y, MARGIN_X + PRINT_WIDTH, y);
-    line(MARGIN_X, y - 24, MARGIN_X + PRINT_WIDTH, y - 24);
-    y -= 24;
+    line(MARGIN_X, y - 22, MARGIN_X + PRINT_WIDTH, y - 22);
+
+    let x = MARGIN_X;
+    tableColumns.forEach((column) => {
+      line(x, y, x, y - 22);
+      const anchorX = column.align === 'right'
+        ? x + column.width - 6
+        : column.align === 'center'
+          ? x + (column.width / 2)
+          : x + 6;
+      drawText(column.label, anchorX, y - 14, { font: 'F2', size: 8, align: column.align ?? 'left' });
+      x += column.width;
+    });
+    line(MARGIN_X + PRINT_WIDTH, y, MARGIN_X + PRINT_WIDTH, y - 22);
+    y -= 22;
   };
 
   const drawLineItems = () => {
-    drawText('LINE ITEMS', MARGIN_X, y - 2, { font: 'F2', size: 11 });
-    y -= 16;
+    const titleHeight = 16;
+    ensureSpace(titleHeight + 26);
+    drawText('Line Items', MARGIN_X, y - 2, { font: 'F2', size: 11 });
+    y -= titleHeight;
     drawTableHeader();
 
     doc.lineItems.forEach((item, index) => {
-      const valueMap = {
+      const rowValues: Record<TableColumn['key'], string> = {
         index: String(index + 1),
-        material: item.materialLabel,
-        description: item.description,
-        quantity: item.quantity,
+        description: `${item.materialLabel}${item.description ? ` - ${item.description}` : ''}`,
         unit: item.unit,
+        quantity: item.quantity,
         rate: formatCurrency(item.rate),
-        tax: item.tax,
         amount: formatCurrency(item.amount),
       };
 
-      const rowLineCounts = tableColumns.map((column) => wrapText(valueMap[column.key], column.width - 12, 8).length);
-      const rowHeight = Math.max(22, Math.max(...rowLineCounts) * 10 + 10);
-      if (y - rowHeight < MARGIN_BOTTOM + 160) {
+      const rowHeight = Math.max(
+        22,
+        ...tableColumns.map((column) => {
+          const innerWidth = column.width - 12;
+          const lineCount = wrapText(rowValues[column.key] || EMPTY_VALUE, innerWidth, 8).length;
+          return (lineCount * 10) + 8;
+        }),
+      );
+
+      if (y - rowHeight < MARGIN_BOTTOM + 180) {
         newPage();
         drawHeader();
-        drawText('LINE ITEMS (CONTINUED)', MARGIN_X, y - 2, { font: 'F2', size: 11 });
-        y -= 16;
+        drawText('Line Items', MARGIN_X, y - 2, { font: 'F2', size: 11 });
+        y -= titleHeight;
         drawTableHeader();
       }
 
-      let cursorX = MARGIN_X;
-      setLineWidth(0.4);
-      setStrokeGray(0.55);
+      setLineWidth(0.45);
+      setStrokeGray(BORDER_GRAY);
       rect(MARGIN_X, y, PRINT_WIDTH, rowHeight);
+      let x = MARGIN_X;
       tableColumns.forEach((column) => {
-        line(cursorX, y, cursorX, y - rowHeight);
-        const lines = wrapText(valueMap[column.key], column.width - 12, 8);
-        const contentTop = y - 8;
+        line(x, y, x, y - rowHeight);
+        const innerWidth = column.width - 12;
+        const lines = wrapText(rowValues[column.key] || EMPTY_VALUE, innerWidth, 8);
+        const textTop = y - 6;
         lines.forEach((lineText, lineIndex) => {
-          const baselineY = contentTop - 8 - (lineIndex * 10);
           const anchorX = column.align === 'right'
-            ? cursorX + column.width - 6
+            ? x + column.width - 6
             : column.align === 'center'
-              ? cursorX + (column.width / 2)
-              : cursorX + 6;
-          drawText(lineText, anchorX, baselineY, { size: 8, align: column.align ?? 'left' });
+              ? x + (column.width / 2)
+              : x + 6;
+          drawText(lineText, anchorX, textTop - 8 - (lineIndex * 10), { size: 8, align: column.align ?? 'left' });
         });
-        cursorX += column.width;
+        x += column.width;
       });
       line(MARGIN_X + PRINT_WIDTH, y, MARGIN_X + PRINT_WIDTH, y - rowHeight);
       y -= rowHeight;
     });
+
+    y -= SECTION_GAP;
   };
 
-  const drawBottomSummary = () => {
-    const leftWidth = PRINT_WIDTH * 0.65;
-    const rightWidth = PRINT_WIDTH - leftWidth;
-    const leftLines = doc.remarks.length ? doc.remarks : ['No remarks'];
-    const summaryRows = [
-      ['Subtotal', formatCurrency(doc.subtotal)],
-      ['Discount', formatCurrency(doc.discount)],
-      ['Tax', formatCurrency(doc.tax)],
+  const drawTotalsSection = () => {
+    const blockWidth = 190;
+    const leftWidth = PRINT_WIDTH - blockWidth - 12;
+    const rows: LabeledValue[] = [
+      { label: 'Subtotal', value: formatCurrency(doc.subtotal) },
+      { label: 'Discount', value: formatCurrency(doc.discount) },
+      { label: 'GST / Tax', value: formatCurrency(doc.tax) },
     ];
-    const remarksHeight = Math.max(64, 28 + leftLines.reduce((sum, lineText) => sum + (wrapText(lineText, leftWidth - (DEFAULT_PADDING * 2)).length * LINE_HEIGHT), 0));
-    const summaryHeight = 28 + (summaryRows.length * 18) + 28;
-    const sectionHeight = Math.max(remarksHeight, summaryHeight);
-    ensureSpace(sectionHeight + 14, 84);
+    const height = 78;
+    ensureSpace(height + SECTION_GAP + 80);
 
-    const top = y - 14;
-    setLineWidth(0.6);
-    setStrokeGray(0.35);
-    rect(MARGIN_X, top, PRINT_WIDTH, sectionHeight);
-    line(MARGIN_X + leftWidth, top, MARGIN_X + leftWidth, top - sectionHeight);
+    const top = y;
+    drawBox(top, height, MARGIN_X + leftWidth + 12, blockWidth, { shadedTitle: false });
 
-    setFillGray(0.96);
-    rect(MARGIN_X, top, leftWidth, 24, true);
-    rect(MARGIN_X + leftWidth, top, rightWidth, 24, true);
-    setFillGray(0);
-    drawText('Terms & Conditions / Notes', MARGIN_X + DEFAULT_PADDING, top - 16, { font: 'F2', size: 10 });
-    drawText('Order Summary', MARGIN_X + leftWidth + DEFAULT_PADDING, top - 16, { font: 'F2', size: 10 });
-
-    let leftCursor = top - 32;
-    leftLines.forEach((lineText) => {
-      leftCursor -= drawWrappedText(lineText, MARGIN_X + DEFAULT_PADDING, leftCursor, leftWidth - (DEFAULT_PADDING * 2), { size: FONT_SIZE }) - LINE_HEIGHT;
-      leftCursor -= 2;
+    let cursor = top - 18;
+    rows.forEach((row) => {
+      drawText(row.label, MARGIN_X + leftWidth + 24, cursor, { size: 9 });
+      drawText(row.value, PAGE_WIDTH - MARGIN_X - 10, cursor, { size: 9, align: 'right' });
+      cursor -= 16;
     });
+    line(MARGIN_X + leftWidth + 20, cursor + 6, PAGE_WIDTH - MARGIN_X - 10, cursor + 6);
+    drawText('Grand Total', MARGIN_X + leftWidth + 24, cursor - 10, { font: 'F2', size: 10 });
+    drawText(formatCurrency(doc.grandTotal), PAGE_WIDTH - MARGIN_X - 10, cursor - 10, { font: 'F2', size: 12, align: 'right' });
+    y -= height + SECTION_GAP;
+  };
 
-    let summaryY = top - 40;
-    summaryRows.forEach(([label, value]) => {
-      drawText(label, MARGIN_X + leftWidth + DEFAULT_PADDING, summaryY, { size: 9 });
-      drawText(value, MARGIN_X + PRINT_WIDTH - DEFAULT_PADDING, summaryY, { size: 9, font: 'F2', align: 'right' });
-      summaryY -= 18;
-    });
-    line(MARGIN_X + leftWidth + DEFAULT_PADDING, summaryY + 6, MARGIN_X + PRINT_WIDTH - DEFAULT_PADDING, summaryY + 6);
-    drawText('Grand Total', MARGIN_X + leftWidth + DEFAULT_PADDING, summaryY - 10, { font: 'F2', size: 10 });
-    drawText(formatCurrency(doc.grandTotal), MARGIN_X + PRINT_WIDTH - DEFAULT_PADDING, summaryY - 10, { font: 'F2', size: 12, align: 'right' });
+  const drawAmountInWords = () => {
+    const text = amountToWords(doc.grandTotal);
+    const height = Math.max(36, BOX_TITLE_HEIGHT + DEFAULT_PADDING + wrapText(text, PRINT_WIDTH - (DEFAULT_PADDING * 2), FONT_SIZE).length * LINE_HEIGHT + DEFAULT_PADDING);
+    ensureSpace(height + SECTION_GAP);
 
-    y = top - sectionHeight - 18;
+    const top = y;
+    drawBox(top, height, MARGIN_X, PRINT_WIDTH, { title: 'Amount in Words' });
+    drawWrappedText(text, MARGIN_X + DEFAULT_PADDING, top - BOX_TITLE_HEIGHT - DEFAULT_PADDING + 4, PRINT_WIDTH - (DEFAULT_PADDING * 2), { size: FONT_SIZE, lineHeight: LINE_HEIGHT });
+    y -= height + SECTION_GAP;
+  };
+
+  const drawTerms = () => {
+    const remarks = doc.remarks.length ? doc.remarks.join(' ') : 'No remarks';
+    const wrappedLines = wrapText(remarks, PRINT_WIDTH - (DEFAULT_PADDING * 2), FONT_SIZE);
+    const height = BOX_TITLE_HEIGHT + DEFAULT_PADDING + (wrappedLines.length * LINE_HEIGHT) + DEFAULT_PADDING;
+    ensureSpace(height + SECTION_GAP + 56);
+
+    const top = y;
+    drawBox(top, height, MARGIN_X, PRINT_WIDTH, { title: 'Terms & Conditions' });
+    drawWrappedText(remarks, MARGIN_X + DEFAULT_PADDING, top - BOX_TITLE_HEIGHT - DEFAULT_PADDING + 4, PRINT_WIDTH - (DEFAULT_PADDING * 2), { size: FONT_SIZE, lineHeight: LINE_HEIGHT });
+    y -= height + SECTION_GAP;
   };
 
   const drawFooter = () => {
-    const footerHeight = 56;
-    ensureSpace(footerHeight);
+    const height = 48;
+    ensureSpace(height);
     const top = y;
-    const halfWidth = (PRINT_WIDTH - 24) / 2;
+    const gap = 40;
+    const halfWidth = (PRINT_WIDTH - gap) / 2;
     setLineWidth(0.5);
-    setStrokeGray(0.45);
+    setStrokeGray(BORDER_GRAY);
     line(MARGIN_X, top - 14, MARGIN_X + halfWidth, top - 14);
-    line(MARGIN_X + halfWidth + 24, top - 14, PAGE_WIDTH - MARGIN_X, top - 14);
+    line(MARGIN_X + halfWidth + gap, top - 14, PAGE_WIDTH - MARGIN_X, top - 14);
     drawText('Prepared By', MARGIN_X, top - 28, { font: 'F2', size: 10 });
-    drawText('Approved By / Authorized Signatory', PAGE_WIDTH - MARGIN_X, top - 28, { font: 'F2', size: 10, align: 'right' });
-    drawText('JAKHIRA ERP Procurement Team', MARGIN_X, top - 44, { size: 9 });
-    drawText('For JAKHIRA ERP', PAGE_WIDTH - MARGIN_X, top - 44, { size: 9, align: 'right' });
-    y -= footerHeight;
+    drawText('Authorized Signatory', PAGE_WIDTH - MARGIN_X, top - 28, { font: 'F2', size: 10, align: 'right' });
+    y -= height;
   };
 
   drawHeader();
-  drawTwoColumnSection(
-    { title: 'Vendor Details', lines: doc.vendorDetails },
-    { title: 'Site Details', lines: doc.siteDetails },
-  );
-  drawTwoColumnSection(
-    { title: 'Billing Address', lines: doc.billingAddress },
-    { title: 'Shipping Address', lines: doc.shippingAddress },
-  );
+  drawPurchaseOrderDetails();
+  drawVendorDetails();
+  drawBillShipSection();
   drawLineItems();
-  y -= 12;
-  drawBottomSummary();
+  drawTotalsSection();
+  drawAmountInWords();
+  drawTerms();
   drawFooter();
 
-  downloadBlob(createPdf(pages), `${doc.poNumber}.pdf`);
+  downloadBlob(createPdf(pages), `${sanitizeText(doc.poNumber) || 'purchase-order'}.pdf`);
 };
