@@ -46,13 +46,13 @@ export const MaterialsPage = () => {
     <div className="space-y-8">
       <PageHeader
         title="Materials"
-        description="Maintain material masters with live CRUD, category-level search, unit controls, and reorder visibility."
+        description="Maintain material masters with live CRUD, category-level search, tax code controls, and reusable ERP records."
         actions={<Button onClick={() => setShowForm(true)}><Plus className="mr-2 h-4 w-4" />Add material</Button>}
       />
       <ModuleToolbar
         filters={(
           <>
-            <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by material name, SKU, category, or unit" />
+            <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by material name, code, category, subcategory, unit, or HSN" />
             <select className="h-11 rounded-2xl border border-input bg-background px-4 text-sm" value={category} onChange={(event) => setCategory(event.target.value)}>
               <option value="">All categories</option>
               {categories.map((item) => <option key={item} value={item}>{item}</option>)}
@@ -73,10 +73,10 @@ export const MaterialsPage = () => {
         <DataTable<MaterialRecord>
           rows={data}
           columns={[
-            { key: 'name', title: 'Material', render: (row) => <div><p className="font-medium">{row.name}</p><p className="text-xs text-muted-foreground">{row.sku}</p></div> },
-            { key: 'category', title: 'Category' },
+            { key: 'name', title: 'Material', render: (row) => <div><p className="font-medium">{row.name}</p><p className="text-xs text-muted-foreground">{row.materialCode}</p></div> },
+            { key: 'category', title: 'Category', render: (row) => <div><p>{row.category}</p><p className="text-xs text-muted-foreground">{row.subcategory || '—'}</p></div> },
             { key: 'unit', title: 'Unit' },
-            { key: 'reorderLevel', title: 'Reorder Level' },
+            { key: 'hsnCode', title: 'HSN', render: (row) => row.hsnCode || '—' },
             { key: 'status', title: 'Status', render: (row) => <StatusBadge status={row.status} /> },
             { key: 'actions', title: 'Actions', className: 'w-36', render: (row) => <div className="flex gap-2"><Button type="button" variant="outline" className="h-9 px-3" onClick={() => { setSelectedMaterial(row); setShowForm(true); }}><Pencil className="mr-2 h-4 w-4" />Edit</Button><Button type="button" variant="outline" className="h-9 px-3 text-destructive hover:text-destructive" onClick={() => setMaterialToDelete(row)}><Trash2 className="mr-2 h-4 w-4" />Delete</Button></div> },
           ]}

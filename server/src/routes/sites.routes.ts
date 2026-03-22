@@ -9,7 +9,7 @@ const router = Router();
 const service = new SitesService();
 
 router.get('/', validate(siteQuerySchema), asyncHandler(async (req, res) => {
-  ok(res, await service.list({ status: req.query.status as string | undefined, city: req.query.city as string | undefined, q: req.query.q as string | undefined }));
+  ok(res, await service.list({ status: req.query.status as string | undefined, q: req.query.q as string | undefined }));
 }));
 
 router.get('/:id', validate(idParamSchema), asyncHandler(async (req, res) => {

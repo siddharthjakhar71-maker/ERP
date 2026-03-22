@@ -9,7 +9,14 @@ import { handleDatabaseError } from '../utils/errors.js';
 const buildVendorSearch = (query?: string) => {
   if (!query) return undefined;
   const term = `%${query.trim()}%`;
-  return or(like(vendors.name, term), like(vendors.code, term), like(vendors.city, term), like(vendors.contactPerson, term));
+  return or(
+    like(vendors.name, term),
+    like(vendors.vendorCode, term),
+    like(vendors.city, term),
+    like(vendors.contactPerson, term),
+    like(vendors.phone, term),
+    like(vendors.email, term),
+  );
 };
 
 export class VendorsService {
@@ -42,12 +49,7 @@ export class VendorsService {
 
   async create(input: VendorPayload) {
     try {
-      const record = {
-        id: randomUUID(),
-        ...input,
-        openingBalance: 0,
-      };
-
+      const record = { id: randomUUID(), ...input };
       await db.insert(vendors).values(record);
       return this.getById(record.id);
     } catch (error) {

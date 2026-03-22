@@ -8,37 +8,39 @@ import { Label } from '@/components/ui/label';
 import type { MaterialPayload, MaterialRecord } from '@/types';
 
 const materialSchema = z.object({
-  sku: z.string().min(2),
+  materialCode: z.string().min(2),
   name: z.string().min(2),
   category: z.string().min(2),
+  subcategory: z.string().optional().default(''),
   unit: z.string().min(1),
+  hsnCode: z.string().optional().default(''),
   description: z.string().optional().default(''),
-  reorderLevel: z.coerce.number().min(0),
   status: z.enum(['active', 'inactive']),
 });
 
 type MaterialFormValues = z.infer<typeof materialSchema>;
 
-const defaults: MaterialFormValues = { sku: '', name: '', category: '', unit: '', description: '', reorderLevel: 0, status: 'active' };
+const defaults: MaterialFormValues = { materialCode: '', name: '', category: '', subcategory: '', unit: '', hsnCode: '', description: '', status: 'active' };
 
 export const MaterialForm = ({ material, isSubmitting, onCancel, onSubmit }: { material?: MaterialRecord | null; isSubmitting?: boolean; onCancel: () => void; onSubmit: (values: MaterialPayload) => Promise<void> | void }) => {
   const { register, handleSubmit, reset, formState: { errors } } = useForm<MaterialFormValues>({ resolver: zodResolver(materialSchema), defaultValues: defaults });
 
   useEffect(() => {
     reset(material ? {
-      sku: material.sku,
+      materialCode: material.materialCode,
       name: material.name,
       category: material.category,
+      subcategory: material.subcategory ?? '',
       unit: material.unit,
+      hsnCode: material.hsnCode ?? '',
       description: material.description ?? '',
-      reorderLevel: material.reorderLevel,
       status: material.status,
     } : defaults);
   }, [material, reset]);
 
   return (
     <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSubmit(async (values) => { await onSubmit(values); })}>
-      {[['sku', 'SKU'], ['name', 'Material Name'], ['category', 'Category'], ['unit', 'Unit']].map(([field, label]) => (
+      {[['materialCode', 'Material Code'], ['name', 'Material Name'], ['category', 'Category'], ['subcategory', 'Subcategory'], ['unit', 'Unit'], ['hsnCode', 'HSN Code']].map(([field, label]) => (
         <div key={field} className="space-y-2">
           <Label htmlFor={field}>{label}</Label>
           <Input id={field} {...register(field as keyof MaterialFormValues)} />
@@ -49,11 +51,7 @@ export const MaterialForm = ({ material, isSubmitting, onCancel, onSubmit }: { m
         <Label htmlFor="description">Description</Label>
         <Input id="description" {...register('description')} />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="reorderLevel">Reorder Level</Label>
-        <Input id="reorderLevel" type="number" step="0.01" {...register('reorderLevel')} />
-      </div>
-      <div className="space-y-2">
+      <div className="space-y-2 md:col-span-2">
         <Label htmlFor="status">Status</Label>
         <select id="status" className="h-11 w-full rounded-2xl border border-input bg-background px-4 text-sm" {...register('status')}>
           <option value="active">Active</option>

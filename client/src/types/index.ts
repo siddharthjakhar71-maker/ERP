@@ -16,40 +16,46 @@ export type ModuleStatus = 'active' | 'inactive';
 
 export interface VendorRecord {
   id: string;
-  code: string;
+  vendorCode: string;
   name: string;
   status: VendorStatus;
-  contactPerson: string;
-  email: string;
-  phone: string;
-  city: string;
+  contactPerson: string | null;
+  email: string | null;
+  phone: string | null;
+  gstin: string | null;
+  city: string | null;
   state?: string | null;
-  paymentTermsDays: number;
+  address?: string | null;
   openingBalance: number;
   outstandingBalance: number;
+  remarks?: string | null;
   recentTransactions: { type: string; ref: string; amount: number; status: string }[];
 }
 
 export interface VendorPayload {
-  code: string;
+  vendorCode: string;
   name: string;
   contactPerson: string;
-  email: string;
   phone: string;
+  email: string;
+  gstin: string;
+  state: string;
   city: string;
-  state?: string;
-  paymentTermsDays: number;
+  address: string;
+  openingBalance: number;
   status: VendorStatus;
+  remarks: string;
 }
 
 export interface MaterialRecord {
   id: string;
-  sku: string;
+  materialCode: string;
   name: string;
   category: string;
+  subcategory?: string | null;
   unit: string;
+  hsnCode?: string | null;
   description?: string | null;
-  reorderLevel: number;
   status: ModuleStatus;
 }
 
@@ -57,14 +63,10 @@ export type MaterialPayload = Omit<MaterialRecord, 'id'>;
 
 export interface SiteRecord {
   id: string;
-  code: string;
+  siteCode: string;
   name: string;
   location?: string | null;
   address?: string | null;
-  city: string;
-  state?: string | null;
-  postalCode?: string | null;
-  projectManager?: string | null;
   status: ModuleStatus;
 }
 
