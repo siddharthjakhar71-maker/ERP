@@ -44,32 +44,31 @@ export const systemSettings = sqliteTable('system_settings', {
 
 export const vendors = sqliteTable('vendors', {
   id: text('id').primaryKey(),
-  code: text('code').notNull().unique(),
+  vendorCode: text('vendor_code').notNull().unique(),
   name: text('name').notNull(),
   contactPerson: text('contact_person'),
-  email: text('email'),
   phone: text('phone'),
-  taxId: text('tax_id'),
-  paymentTermsDays: integer('payment_terms_days').notNull().default(30),
-  addressLine1: text('address_line_1'),
-  addressLine2: text('address_line_2'),
-  city: text('city'),
+  email: text('email'),
+  gstin: text('gstin'),
   state: text('state'),
-  postalCode: text('postal_code'),
-  status: text('status', { enum: ['active', 'inactive', 'on_hold'] }).notNull().default('active'),
+  city: text('city'),
+  address: text('address'),
   openingBalance: real('opening_balance').notNull().default(0),
+  status: text('status', { enum: ['active', 'inactive', 'on_hold'] }).notNull().default('active'),
+  remarks: text('remarks'),
   createdBy: text('created_by').references(() => users.id),
   ...timestamps,
 });
 
 export const materials = sqliteTable('materials', {
   id: text('id').primaryKey(),
-  sku: text('sku').notNull().unique(),
+  materialCode: text('material_code').notNull().unique(),
   name: text('name').notNull(),
   category: text('category').notNull(),
+  subcategory: text('subcategory'),
   unit: text('unit').notNull(),
+  hsnCode: text('hsn_code'),
   description: text('description'),
-  reorderLevel: real('reorder_level').notNull().default(0),
   status: text('status', { enum: ['active', 'inactive'] }).notNull().default('active'),
   createdBy: text('created_by').references(() => users.id),
   ...timestamps,
@@ -77,14 +76,10 @@ export const materials = sqliteTable('materials', {
 
 export const sites = sqliteTable('sites', {
   id: text('id').primaryKey(),
-  code: text('code').notNull().unique(),
+  siteCode: text('site_code').notNull().unique(),
   name: text('name').notNull(),
   location: text('location'),
   address: text('address'),
-  city: text('city'),
-  state: text('state'),
-  postalCode: text('postal_code'),
-  projectManager: text('project_manager'),
   status: text('status', { enum: ['active', 'inactive'] }).notNull().default('active'),
   createdBy: text('created_by').references(() => users.id),
   ...timestamps,
@@ -218,93 +213,26 @@ export const notifications = sqliteTable('notifications', {
   userId: text('user_id').notNull().references(() => users.id),
   title: text('title').notNull(),
   message: text('message').notNull(),
-  type: text('type', { enum: ['info', 'warning', 'success', 'error'] }).notNull().default('info'),
   isRead: integer('is_read', { mode: 'boolean' }).notNull().default(false),
-  actionUrl: text('action_url'),
+  link: text('link'),
   ...timestamps,
 });
 
-export const auditLogs = sqliteTable('audit_logs', {
-  id: text('id').primaryKey(),
-  userId: text('user_id').references(() => users.id),
-  entityType: text('entity_type').notNull(),
-  entityId: text('entity_id').notNull(),
-  action: text('action').notNull(),
-  metadata: text('metadata'),
-  ipAddress: text('ip_address'),
-  ...timestamps,
-});
-
-export const vendorsRelations = relations(vendors, ({ many, one }) => ({
-  rates: many(vendorMaterialRates),
+export const vendorRelations = relations(vendors, ({ many }) => ({
   purchaseOrders: many(purchaseOrders),
   bills: many(bills),
   payments: many(payments),
-  creator: one(users, { fields: [vendors.createdBy], references: [users.id] }),
+  materialRates: many(vendorMaterialRates),
 }));
 
-export const materialsRelations = relations(materials, ({ many }) => ({
+export const materialRelations = relations(materials, ({ many }) => ({
   rates: many(vendorMaterialRates),
   purchaseOrderItems: many(purchaseOrderItems),
-  stockEntries: many(stockLedger),
+  billItems: many(billItems),
+  stockLedger: many(stockLedger),
 }));
 
-export const sitesRelations = relations(sites, ({ many }) => ({
+export const siteRelations = relations(sites, ({ many }) => ({
   purchaseOrders: many(purchaseOrders),
-  stockEntries: many(stockLedger),
+  stockLedger: many(stockLedger),
 }));
-
-export const purchaseOrdersRelations = relations(purchaseOrders, ({ one, many }) => ({
-  vendor: one(vendors, { fields: [purchaseOrders.vendorId], references: [vendors.id] }),
-  site: one(sites, { fields: [purchaseOrders.siteId], references: [sites.id] }),
-  items: many(purchaseOrderItems),
-  grns: many(grns),
-  bills: many(bills),
-}));
-
-export const grnsRelations = relations(grns, ({ one, many }) => ({
-  purchaseOrder: one(purchaseOrders, { fields: [grns.purchaseOrderId], references: [purchaseOrders.id] }),
-  items: many(grnItems),
-  bill: many(bills),
-}));
-
-export const billsRelations = relations(bills, ({ one, many }) => ({
-  vendor: one(vendors, { fields: [bills.vendorId], references: [vendors.id] }),
-  purchaseOrder: one(purchaseOrders, { fields: [bills.purchaseOrderId], references: [purchaseOrders.id] }),
-  grn: one(grns, { fields: [bills.grnId], references: [grns.id] }),
-  items: many(billItems),
-  payments: many(payments),
-}));
-
-export const schema = {
-  users,
-  userProfiles,
-  systemSettings,
-  vendors,
-  materials,
-  sites,
-  vendorMaterialRates,
-  purchaseOrders,
-  purchaseOrderItems,
-  grns,
-  grnItems,
-  bills,
-  billItems,
-  payments,
-  stockLedger,
-  notifications,
-  auditLogs,
-};
-
-export type User = typeof users.$inferSelect;
-export type Vendor = typeof vendors.$inferSelect;
-export type VendorInsert = typeof vendors.$inferInsert;
-export type Site = typeof sites.$inferSelect;
-export type SiteInsert = typeof sites.$inferInsert;
-export type Material = typeof materials.$inferSelect;
-export type MaterialInsert = typeof materials.$inferInsert;
-export type PurchaseOrder = typeof purchaseOrders.$inferSelect;
-export type PurchaseOrderItem = typeof purchaseOrderItems.$inferSelect;
-export type Grn = typeof grns.$inferSelect;
-export type Bill = typeof bills.$inferSelect;
-export type Payment = typeof payments.$inferSelect;

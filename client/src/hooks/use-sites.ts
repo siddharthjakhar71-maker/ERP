@@ -6,7 +6,6 @@ import type { ModuleStatus, SitePayload, SiteRecord } from '@/types';
 interface SiteFilters {
   status?: ModuleStatus | '';
   q?: string;
-  city?: string;
 }
 
 export const useSites = (filters: SiteFilters) =>
@@ -16,7 +15,6 @@ export const useSites = (filters: SiteFilters) =>
       const params = new URLSearchParams();
       if (filters.status) params.set('status', filters.status);
       if (filters.q) params.set('q', filters.q);
-      if (filters.city) params.set('city', filters.city);
       return api<SiteRecord[]>(`/sites${params.toString() ? `?${params.toString()}` : ''}`);
     },
   });

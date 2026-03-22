@@ -8,29 +8,35 @@ import { Label } from '@/components/ui/label';
 import type { VendorPayload, VendorRecord } from '@/types';
 
 const vendorSchema = z.object({
-  code: z.string().min(2),
+  vendorCode: z.string().min(2),
   name: z.string().min(2),
-  contactPerson: z.string().min(2),
-  email: z.string().email(),
-  phone: z.string().min(6),
-  city: z.string().min(2),
+  contactPerson: z.string().optional().default(''),
+  email: z.union([z.string().email(), z.literal('')]).default(''),
+  phone: z.string().optional().default(''),
+  gstin: z.string().optional().default(''),
+  city: z.string().optional().default(''),
   state: z.string().optional().default(''),
-  paymentTermsDays: z.coerce.number().min(0),
+  address: z.string().optional().default(''),
+  openingBalance: z.coerce.number().min(0),
   status: z.enum(['active', 'inactive', 'on_hold']),
+  remarks: z.string().optional().default(''),
 });
 
 type VendorFormValues = z.infer<typeof vendorSchema>;
 
 const defaultValues: VendorFormValues = {
-  code: '',
+  vendorCode: '',
   name: '',
   contactPerson: '',
   email: '',
   phone: '',
+  gstin: '',
   city: '',
   state: '',
-  paymentTermsDays: 30,
+  address: '',
+  openingBalance: 0,
   status: 'active',
+  remarks: '',
 };
 
 export const VendorForm = ({
@@ -55,27 +61,35 @@ export const VendorForm = ({
   });
 
   useEffect(() => {
-    reset(vendor ? {
-      code: vendor.code,
-      name: vendor.name,
-      contactPerson: vendor.contactPerson,
-      email: vendor.email,
-      phone: vendor.phone,
-      city: vendor.city,
-      state: vendor.state ?? '',
-      paymentTermsDays: vendor.paymentTermsDays,
-      status: vendor.status,
-    } : defaultValues);
+    reset(
+      vendor
+        ? {
+            vendorCode: vendor.vendorCode,
+            name: vendor.name,
+            contactPerson: vendor.contactPerson ?? '',
+            email: vendor.email ?? '',
+            phone: vendor.phone ?? '',
+            gstin: vendor.gstin ?? '',
+            city: vendor.city ?? '',
+            state: vendor.state ?? '',
+            address: vendor.address ?? '',
+            openingBalance: vendor.openingBalance,
+            status: vendor.status,
+            remarks: vendor.remarks ?? '',
+          }
+        : defaultValues,
+    );
   }, [vendor, reset]);
 
   return (
     <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSubmit(async (values) => { await onSubmit(values); })}>
       {[
-        ['code', 'Vendor Code'],
+        ['vendorCode', 'Vendor Code'],
         ['name', 'Vendor Name'],
         ['contactPerson', 'Contact Person'],
         ['email', 'Email'],
         ['phone', 'Phone'],
+        ['gstin', 'GSTIN'],
         ['city', 'City'],
         ['state', 'State'],
       ].map(([field, label]) => (
@@ -85,9 +99,13 @@ export const VendorForm = ({
           {errors[field as keyof VendorFormValues] ? <p className="text-sm text-destructive">{String(errors[field as keyof VendorFormValues]?.message ?? '')}</p> : null}
         </div>
       ))}
+      <div className="space-y-2 md:col-span-2">
+        <Label htmlFor="address">Address</Label>
+        <Input id="address" {...register('address')} />
+      </div>
       <div className="space-y-2">
-        <Label htmlFor="paymentTermsDays">Payment Terms (Days)</Label>
-        <Input id="paymentTermsDays" type="number" {...register('paymentTermsDays')} />
+        <Label htmlFor="openingBalance">Opening Balance</Label>
+        <Input id="openingBalance" type="number" step="0.01" {...register('openingBalance')} />
       </div>
       <div className="space-y-2">
         <Label htmlFor="status">Status</Label>
@@ -96,6 +114,10 @@ export const VendorForm = ({
           <option value="inactive">Inactive</option>
           <option value="on_hold">On Hold</option>
         </select>
+      </div>
+      <div className="space-y-2 md:col-span-2">
+        <Label htmlFor="remarks">Remarks</Label>
+        <Input id="remarks" {...register('remarks')} />
       </div>
       <div className="md:col-span-2 flex justify-end gap-3">
         <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>Cancel</Button>

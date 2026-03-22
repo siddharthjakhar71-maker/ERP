@@ -46,7 +46,7 @@ export const VendorsPage = () => {
     <div className="space-y-8">
       <PageHeader
         title="Vendor management"
-        description="Manage supplier masters with live ERP data, onboarding controls, payment terms, and day-to-day CRUD operations."
+        description="Manage supplier masters with live ERP data, onboarding controls, balances, and day-to-day CRUD operations."
         actions={
           <Button onClick={() => setShowForm(true)}>
             <Plus className="mr-2 h-4 w-4" />
@@ -58,7 +58,7 @@ export const VendorsPage = () => {
       <ModuleToolbar
         filters={(
           <>
-            <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by vendor name, code, city, or contact" />
+            <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by vendor name, code, city, phone, or contact" />
             <select className="h-11 rounded-2xl border border-input bg-background px-4 text-sm" value={status} onChange={(event) => setStatus(event.target.value as VendorStatus | '')}>
               <option value="">All statuses</option>
               <option value="active">Active</option>
@@ -79,10 +79,10 @@ export const VendorsPage = () => {
         <DataTable<VendorRecord>
           rows={rows}
           columns={[
-            { key: 'name', title: 'Vendor', render: (row) => <div><p className="font-medium">{row.name}</p><p className="text-xs text-muted-foreground">{row.code}</p></div> },
-            { key: 'contactPerson', title: 'Contact', render: (row) => <div><p>{row.contactPerson}</p><p className="text-xs text-muted-foreground">{row.email}</p></div> },
-            { key: 'city', title: 'Location', render: (row) => <div><p>{row.city}</p><p className="text-xs text-muted-foreground">{row.state || '—'}</p></div> },
-            { key: 'paymentTermsDays', title: 'Payment Terms', render: (row) => `${row.paymentTermsDays} days` },
+            { key: 'name', title: 'Vendor', render: (row) => <div><p className="font-medium">{row.name}</p><p className="text-xs text-muted-foreground">{row.vendorCode}</p></div> },
+            { key: 'contactPerson', title: 'Contact', render: (row) => <div><p>{row.contactPerson || '—'}</p><p className="text-xs text-muted-foreground">{row.email || 'No email'}</p></div> },
+            { key: 'city', title: 'Location', render: (row) => <div><p>{row.city || '—'}</p><p className="text-xs text-muted-foreground">{row.state || '—'}</p></div> },
+            { key: 'gstin', title: 'GSTIN', render: (row) => row.gstin || '—' },
             { key: 'outstandingBalance', title: 'Outstanding', render: (row) => currency.format(row.outstandingBalance) },
             { key: 'status', title: 'Status', render: (row) => <StatusBadge status={row.status} /> },
             {
@@ -108,7 +108,7 @@ export const VendorsPage = () => {
         open={showForm}
         onOpenChange={(open) => { if (!open) closeForm(); else setShowForm(open); }}
         title={selectedVendor ? 'Edit vendor' : 'Add vendor'}
-        description={selectedVendor ? 'Update vendor master data and commercial terms.' : 'Create a production-ready vendor master record.'}
+        description={selectedVendor ? 'Update vendor master data and commercial details.' : 'Create a production-ready vendor master record.'}
       >
         <VendorForm
           vendor={selectedVendor}

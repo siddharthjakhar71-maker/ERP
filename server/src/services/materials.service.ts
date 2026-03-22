@@ -9,7 +9,14 @@ import { handleDatabaseError } from '../utils/errors.js';
 const buildMaterialSearch = (query?: string) => {
   if (!query) return undefined;
   const term = `%${query.trim()}%`;
-  return or(like(materials.name, term), like(materials.sku, term), like(materials.category, term), like(materials.unit, term));
+  return or(
+    like(materials.name, term),
+    like(materials.materialCode, term),
+    like(materials.category, term),
+    like(materials.subcategory, term),
+    like(materials.unit, term),
+    like(materials.hsnCode, term),
+  );
 };
 
 export class MaterialsService {
@@ -17,7 +24,13 @@ export class MaterialsService {
     return db
       .select()
       .from(materials)
-      .where(and(filters.status ? eq(materials.status, filters.status as typeof materials.$inferSelect.status) : undefined, filters.category ? eq(materials.category, filters.category) : undefined, buildMaterialSearch(filters.q)))
+      .where(
+        and(
+          filters.status ? eq(materials.status, filters.status as typeof materials.$inferSelect.status) : undefined,
+          filters.category ? eq(materials.category, filters.category) : undefined,
+          buildMaterialSearch(filters.q),
+        ),
+      )
       .orderBy(desc(materials.createdAt));
   }
 

@@ -4,12 +4,13 @@ import { searchQuerySchema } from './common.js';
 const materialStatusSchema = z.enum(['active', 'inactive']);
 
 const materialBodySchema = z.object({
-  sku: z.string().trim().min(2).max(30),
+  materialCode: z.string().trim().min(2).max(30),
   name: z.string().trim().min(2).max(120),
   category: z.string().trim().min(2).max(80),
+  subcategory: z.string().trim().max(80).optional().default(''),
   unit: z.string().trim().min(1).max(30),
+  hsnCode: z.string().trim().max(30).optional().default(''),
   description: z.string().trim().max(300).optional().default(''),
-  reorderLevel: z.coerce.number().min(0).max(1000000),
   status: materialStatusSchema,
 });
 

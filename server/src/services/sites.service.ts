@@ -9,15 +9,15 @@ import { handleDatabaseError } from '../utils/errors.js';
 const buildSiteSearch = (query?: string) => {
   if (!query) return undefined;
   const term = `%${query.trim()}%`;
-  return or(like(sites.name, term), like(sites.code, term), like(sites.city, term), like(sites.projectManager, term));
+  return or(like(sites.name, term), like(sites.siteCode, term), like(sites.location, term), like(sites.address, term));
 };
 
 export class SitesService {
-  async list(filters: { status?: string; city?: string; q?: string }) {
+  async list(filters: { status?: string; q?: string }) {
     return db
       .select()
       .from(sites)
-      .where(and(filters.status ? eq(sites.status, filters.status as typeof sites.$inferSelect.status) : undefined, filters.city ? eq(sites.city, filters.city) : undefined, buildSiteSearch(filters.q)))
+      .where(and(filters.status ? eq(sites.status, filters.status as typeof sites.$inferSelect.status) : undefined, buildSiteSearch(filters.q)))
       .orderBy(desc(sites.createdAt));
   }
 
