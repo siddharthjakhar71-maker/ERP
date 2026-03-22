@@ -6,7 +6,10 @@ import { AppShell } from '@/components/layout/app-shell';
 import { DashboardPage } from '@/pages/dashboard/dashboard-page';
 import { LoginPage } from '@/pages/auth/login-page';
 import { MaterialsPage } from '@/pages/materials/materials-page';
-import { PurchaseOrdersPage } from '@/pages/purchase-orders/purchase-orders-page';
+import { PurchaseOrderCreatePage } from '@/pages/purchase-orders/purchase-order-create-page';
+import { PurchaseOrderEditPage } from '@/pages/purchase-orders/purchase-order-edit-page';
+import { PurchaseOrderListPage } from '@/pages/purchase-orders/purchase-order-list-page';
+import { PurchaseOrderViewPage } from '@/pages/purchase-orders/purchase-order-view-page';
 import { SettingsPage } from '@/pages/settings/settings-page';
 import { SitesPage } from '@/pages/sites/sites-page';
 import { VendorsPage } from '@/pages/vendors/vendors-page';
@@ -33,14 +36,17 @@ const settingsRoute = createRoute({ getParentRoute: () => appRoute, path: '/sett
 
 const stubPage = (title: string, description: string) => () => <div className="rounded-3xl border border-border bg-card p-8 shadow-soft"><h1 className="text-2xl font-semibold">{title}</h1><p className="mt-3 text-sm text-muted-foreground">{description}</p></div>;
 
-const purchaseRoute = createRoute({ getParentRoute: () => appRoute, path: '/purchase-orders', component: PurchaseOrdersPage });
+const purchaseRoute = createRoute({ getParentRoute: () => appRoute, path: '/purchase-orders', component: PurchaseOrderListPage });
+const purchaseCreateRoute = createRoute({ getParentRoute: () => appRoute, path: '/purchase-orders/new', component: PurchaseOrderCreatePage });
+const purchaseViewRoute = createRoute({ getParentRoute: () => appRoute, path: '/purchase-orders/$purchaseOrderId', component: PurchaseOrderViewPage });
+const purchaseEditRoute = createRoute({ getParentRoute: () => appRoute, path: '/purchase-orders/$purchaseOrderId/edit', component: PurchaseOrderEditPage });
 const grnRoute = createRoute({ getParentRoute: () => appRoute, path: '/grn', component: stubPage('GRN', 'Phase 4 module scaffold for receipt posting, QC disposition, and inward stock updates.') });
 const billsRoute = createRoute({ getParentRoute: () => appRoute, path: '/bills', component: stubPage('Bills', 'Phase 5 module scaffold for AP invoice matching and due management.') });
 const paymentsRoute = createRoute({ getParentRoute: () => appRoute, path: '/payments', component: stubPage('Payments', 'Phase 5 module scaffold for vendor settlement and reference tracking.') });
 const stockRoute = createRoute({ getParentRoute: () => appRoute, path: '/stock', component: stubPage('Stock', 'Phase 6 module scaffold for site-wise inventory visibility and low-stock controls.') });
 const reportsRoute = createRoute({ getParentRoute: () => appRoute, path: '/reports', component: stubPage('Reports', 'Phase 6 module scaffold for procurement analytics, ledgers, and ageing summaries.') });
 
-const routeTree = rootRoute.addChildren([authRoute, appRoute.addChildren([dashboardRoute, vendorsRoute, materialsRoute, sitesRoute, settingsRoute, purchaseRoute, grnRoute, billsRoute, paymentsRoute, stockRoute, reportsRoute])]);
+const routeTree = rootRoute.addChildren([authRoute, appRoute.addChildren([dashboardRoute, vendorsRoute, materialsRoute, sitesRoute, settingsRoute, purchaseRoute, purchaseCreateRoute, purchaseViewRoute, purchaseEditRoute, grnRoute, billsRoute, paymentsRoute, stockRoute, reportsRoute])]);
 const router = createRouter({ routeTree, defaultPreload: 'intent' });
 
 declare module '@tanstack/react-router' { interface Register { router: typeof router; } }
