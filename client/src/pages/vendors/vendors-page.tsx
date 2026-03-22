@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ConfirmDeleteDialog } from '@/components/shared/confirm-delete-dialog';
 import { DataTable } from '@/components/shared/data-table';
+import { TableActionButton, TableActionButtons, tableActionIcons } from '@/components/shared/table-action-buttons';
 import { FormModal } from '@/components/shared/form-modal';
 import { ModuleToolbar } from '@/components/shared/module-toolbar';
 import { PageHeader } from '@/components/shared/page-header';
@@ -88,16 +89,12 @@ export const VendorsPage = () => {
             {
               key: 'actions',
               title: 'Actions',
-              className: 'w-36',
+              className: 'w-24 text-center',
               render: (row) => (
-                <div className="flex gap-2">
-                  <Button type="button" variant="outline" className="h-9 px-3" onClick={() => { setSelectedVendor(row); setShowForm(true); }}>
-                    <Pencil className="mr-2 h-4 w-4" /> Edit
-                  </Button>
-                  <Button type="button" variant="outline" className="h-9 px-3 text-destructive hover:text-destructive" onClick={() => setVendorToDelete(row)}>
-                    <Trash2 className="mr-2 h-4 w-4" /> Delete
-                  </Button>
-                </div>
+                <TableActionButtons>
+                  <TableActionButton label="Edit" icon={tableActionIcons.edit} onClick={() => { setSelectedVendor(row); setShowForm(true); }} />
+                  <TableActionButton label="Delete" icon={tableActionIcons.delete} onClick={() => setVendorToDelete(row)} />
+                </TableActionButtons>
               ),
             },
           ]}

@@ -1,16 +1,17 @@
 import { useMemo, useState } from 'react';
-import { Eye, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { Link } from '@tanstack/react-router';
 import { ConfirmDeleteDialog } from '@/components/shared/confirm-delete-dialog';
 import { DataTable } from '@/components/shared/data-table';
 import { EmptyState } from '@/components/shared/empty-state';
+import { TableActionButton, TableActionButtons, TableActionLink, tableActionIcons } from '@/components/shared/table-action-buttons';
 import { ModuleToolbar } from '@/components/shared/module-toolbar';
 import { PageHeader } from '@/components/shared/page-header';
 import { StatusBadge } from '@/components/shared/status-badge';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useDeletePurchaseOrder, usePurchaseOrders } from '@/hooks/use-purchase-orders';
-import { cn, currency } from '@/lib/utils';
+import { currency } from '@/lib/utils';
 import type { PurchaseOrderListRecord, PurchaseOrderStatus } from '@/types';
 
 export const PurchaseOrderListPage = () => {
@@ -65,13 +66,13 @@ export const PurchaseOrderListPage = () => {
             {
               key: 'actions',
               title: 'Actions',
-              className: 'w-72',
+              className: 'w-32 text-center',
               render: (row) => (
-                <div className="flex flex-wrap gap-2">
-                  <Link to="/purchase-orders/$purchaseOrderId" params={{ purchaseOrderId: row.id }} className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-9 px-3')}><Eye className="mr-2 h-4 w-4" />View</Link>
-                  <Link to="/purchase-orders/$purchaseOrderId/edit" params={{ purchaseOrderId: row.id }} className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-9 px-3')}><Pencil className="mr-2 h-4 w-4" />Edit</Link>
-                  <Button type="button" variant="outline" className="h-9 px-3 text-destructive hover:text-destructive" onClick={() => setDeleteTarget(row)}><Trash2 className="mr-2 h-4 w-4" />Delete</Button>
-                </div>
+                <TableActionButtons>
+                  <TableActionLink label="View" to="/purchase-orders/$purchaseOrderId" params={{ purchaseOrderId: row.id }} icon={tableActionIcons.view} />
+                  <TableActionLink label="Edit" to="/purchase-orders/$purchaseOrderId/edit" params={{ purchaseOrderId: row.id }} icon={tableActionIcons.edit} />
+                  <TableActionButton label="Delete" icon={tableActionIcons.delete} onClick={() => setDeleteTarget(row)} />
+                </TableActionButtons>
               ),
             },
           ]}

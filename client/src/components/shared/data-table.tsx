@@ -21,7 +21,7 @@ export const DataTable = <T extends { id: string }>({
         <thead className="bg-muted/60">
           <tr>
             {columns.map((column) => (
-              <th key={String(column.key)} className="px-5 py-4 text-left font-medium text-muted-foreground">
+              <th key={String(column.key)} className={`px-5 py-4 text-left font-medium text-muted-foreground ${column.className ?? ''}`.trim()}>
                 {column.title}
               </th>
             ))}
