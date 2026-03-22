@@ -16,6 +16,15 @@ export const users = sqliteTable('users', {
   ...timestamps,
 });
 
+
+export const passwordResets = sqliteTable('password_resets', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  token: text('token').notNull().unique(),
+  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+  ...timestamps,
+});
+
 export const userProfiles = sqliteTable('user_profiles', {
   id: text('id').primaryKey(),
   userId: text('user_id').notNull().references(() => users.id),
@@ -223,6 +232,16 @@ export const notifications = sqliteTable('notifications', {
   link: text('link'),
   ...timestamps,
 });
+
+
+export const userRelations = relations(users, ({ one, many }) => ({
+  profile: one(userProfiles, { fields: [users.id], references: [userProfiles.userId] }),
+  passwordResets: many(passwordResets),
+}));
+
+export const passwordResetRelations = relations(passwordResets, ({ one }) => ({
+  user: one(users, { fields: [passwordResets.userId], references: [users.id] }),
+}));
 
 export const vendorRelations = relations(vendors, ({ many }) => ({
   purchaseOrders: many(purchaseOrders),

@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useNavigate } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -92,9 +92,9 @@ export const LoginPage = () => {
                 <input type="checkbox" className="rounded border-border" {...register('rememberMe')} />
                 Remember me
               </label>
-              <button type="button" className="font-medium text-primary">
+              <Link to="/forgot-password" className="font-medium text-primary">
                 Forgot password?
-              </button>
+              </Link>
             </div>
             <Button className="w-full" size="lg" type="submit" disabled={isSubmitting}>
               {isSubmitting ? 'Signing in...' : 'Sign in'}

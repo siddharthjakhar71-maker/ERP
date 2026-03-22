@@ -1,6 +1,6 @@
 import { count } from 'drizzle-orm';
 import { db, sqlite } from './client.js';
-import { materials, sites, systemSettings, userProfiles, users, vendors } from '../../../shared/schema/index.js';
+import { materials, passwordResets, sites, systemSettings, userProfiles, users, vendors } from '../../../shared/schema/index.js';
 import { hashPassword } from '../utils/auth.js';
 
 const baseSql = `
@@ -13,6 +13,16 @@ CREATE TABLE IF NOT EXISTS users (
   last_login_at INTEGER,
   created_at INTEGER NOT NULL DEFAULT (unixepoch()),
   updated_at INTEGER NOT NULL DEFAULT (unixepoch())
+);
+
+CREATE TABLE IF NOT EXISTS password_resets (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  token TEXT NOT NULL UNIQUE,
+  expires_at INTEGER NOT NULL,
+  created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+  updated_at INTEGER NOT NULL DEFAULT (unixepoch()),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS user_profiles (
@@ -250,6 +260,10 @@ const migrateCrudTables = () => {
   ensureColumn('sites', 'site_code TEXT');
   ensureColumn('sites', 'location TEXT');
   ensureColumn('sites', 'address TEXT');
+
+  ensureColumn('password_resets', 'user_id TEXT');
+  ensureColumn('password_resets', 'token TEXT');
+  ensureColumn('password_resets', 'expires_at INTEGER');
 
   ensureColumn('purchase_orders', 'po_number TEXT');
   ensureColumn('purchase_orders', 'vendor_id TEXT');
