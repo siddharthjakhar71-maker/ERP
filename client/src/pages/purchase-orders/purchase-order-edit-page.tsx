@@ -16,7 +16,7 @@ export const PurchaseOrderEditPage = () => {
   const purchaseOrder = usePurchaseOrder(purchaseOrderId, true);
   const vendors = useVendors({ status: '', q: undefined });
   const sites = useSites({ status: '', q: undefined });
-  const materials = useMaterials({ status: '', q: undefined, category: undefined });
+  const materials = useMaterials({ status: '', q: undefined, category: undefined, vendorId: purchaseOrder.data?.vendorId });
   const updatePurchaseOrder = useUpdatePurchaseOrder();
 
   const handleSubmit = async (payload: PurchaseOrderPayload) => {

@@ -7,6 +7,7 @@ interface MaterialFilters {
   status?: ModuleStatus | '';
   q?: string;
   category?: string;
+  vendorId?: string;
 }
 
 export const useMaterials = (filters: MaterialFilters) =>
@@ -17,6 +18,7 @@ export const useMaterials = (filters: MaterialFilters) =>
       if (filters.status) params.set('status', filters.status);
       if (filters.q) params.set('q', filters.q);
       if (filters.category) params.set('category', filters.category);
+      if (filters.vendorId) params.set('vendorId', filters.vendorId);
       return api<MaterialRecord[]>(`/materials${params.toString() ? `?${params.toString()}` : ''}`);
     },
   });

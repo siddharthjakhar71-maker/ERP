@@ -18,6 +18,7 @@ export const materialQuerySchema = z.object({
   query: searchQuerySchema.extend({
     status: materialStatusSchema.optional(),
     category: z.string().trim().optional(),
+    vendorId: z.string().trim().optional(),
   }).default({}),
   body: z.object({}).default({}),
   params: z.object({}).default({}),

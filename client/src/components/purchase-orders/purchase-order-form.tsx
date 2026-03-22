@@ -27,7 +27,7 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-const emptyItem = (): PurchaseOrderItemDraft => ({ materialId: '', description: '', qty: 1, unit: '', rate: 0, taxPercent: 0, receivedQty: 0 });
+const emptyItem = (): PurchaseOrderItemDraft => ({ materialId: '', description: '', qty: 1, unit: '', rate: 0, taxPercent: 0, receivedQty: 0, unitTouched: false, rateTouched: false, descriptionTouched: false });
 const defaults: FormValues = { poNumber: '', vendorId: '', siteId: '', poDate: new Date().toISOString().slice(0, 10), expectedDeliveryDate: '', billingAddress: '', shippingAddress: '', discountAmount: 0, status: 'draft', remarks: '' };
 const round = (value: number) => Number(value.toFixed(2));
 
@@ -68,12 +68,49 @@ export const PurchaseOrderForm = ({ purchaseOrder, vendors, sites, materials, is
       rate: item.rate,
       taxPercent: item.taxPercent,
       receivedQty: item.receivedQty,
+      unitTouched: Boolean(item.unit),
+      rateTouched: true,
+      descriptionTouched: Boolean(item.description),
     })) ?? [emptyItem()]);
   }, [purchaseOrder, reset]);
 
   const currentStatus = watch('status');
+  const currentVendorId = watch('vendorId');
   const discountAmount = Number(watch('discountAmount') || 0);
-  const invalidItems = items.some((item) => !item.materialId || !item.description || !item.unit || item.qty <= 0);
+
+  const handleItemChange = <K extends keyof PurchaseOrderItemDraft>(index: number, field: K, value: PurchaseOrderItemDraft[K]) => {
+    setItems((current) => current.map((item, itemIndex) => {
+      if (itemIndex !== index) return item;
+      const updated = { ...item, [field]: value } as PurchaseOrderItemDraft;
+      if (field === 'description') updated.descriptionTouched = true;
+      if (field === 'unit') updated.unitTouched = true;
+      if (field === 'rate') updated.rateTouched = true;
+      return updated;
+    }));
+  };
+
+  const handleMaterialSelect = (index: number, materialId: string) => {
+    const material = materials.find((entry) => entry.id === materialId);
+    setItems((current) => current.map((item, itemIndex) => {
+      if (itemIndex !== index) return item;
+      if (!material) return { ...item, materialId };
+      const shouldReplaceDescription = !item.descriptionTouched || !item.description.trim() || item.materialId !== materialId;
+      const shouldReplaceUnit = !item.unitTouched || !item.unit.trim() || item.materialId !== materialId;
+      const shouldReplaceRate = !item.rateTouched || item.rate === 0 || item.materialId !== materialId;
+      return {
+        ...item,
+        materialId,
+        description: shouldReplaceDescription ? (material.description || material.name) : item.description,
+        unit: shouldReplaceUnit ? material.unit : item.unit,
+        rate: shouldReplaceRate ? Number(material.defaultRate ?? 0) : item.rate,
+        descriptionTouched: item.descriptionTouched && !shouldReplaceDescription,
+        unitTouched: item.unitTouched && !shouldReplaceUnit,
+        rateTouched: item.rateTouched && !shouldReplaceRate,
+      };
+    }));
+  };
+
+  const invalidItems = items.some((item) => !item.materialId || item.qty <= 0 || item.rate < 0);
 
   const totals = useMemo(() => {
     const subtotal = round(items.reduce((sum, item) => sum + (item.qty || 0) * (item.rate || 0), 0));
@@ -87,7 +124,7 @@ export const PurchaseOrderForm = ({ purchaseOrder, vendors, sites, materials, is
       await onSubmit({
         ...values,
         expectedDeliveryDate: values.expectedDeliveryDate || undefined,
-        items,
+        items: items.map(({ unitTouched: _unitTouched, rateTouched: _rateTouched, descriptionTouched: _descriptionTouched, ...item }) => item),
       });
     })}>
       <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
@@ -143,6 +180,7 @@ export const PurchaseOrderForm = ({ purchaseOrder, vendors, sites, materials, is
                 <Input id="expectedDeliveryDate" type="date" {...register('expectedDeliveryDate')} />
               </div>
             </div>
+            {!currentVendorId ? <p className="mt-4 text-xs text-muted-foreground">Select a vendor first to load preferred material rates for auto-fill.</p> : null}
           </Card>
 
           <Card className="border-border bg-card/80 p-6">
@@ -170,9 +208,10 @@ export const PurchaseOrderForm = ({ purchaseOrder, vendors, sites, materials, is
               disabled={isSubmitting}
               onAdd={() => setItems((current) => [...current, emptyItem()])}
               onRemove={(index) => setItems((current) => current.filter((_, itemIndex) => itemIndex !== index))}
-              onChange={(index, field, value) => setItems((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, [field]: value } : item))}
+              onChange={handleItemChange}
+              onMaterialSelect={handleMaterialSelect}
             />
-            {invalidItems ? <p className="mt-4 text-sm text-destructive">Each line item needs a material, description, unit, and quantity above zero.</p> : null}
+            {invalidItems ? <p className="mt-4 text-sm text-destructive">Each line item needs a material, quantity above zero, and a non-negative rate. Unit and description auto-fill when available.</p> : null}
           </Card>
 
           <Card className="border-border bg-card/80 p-6">

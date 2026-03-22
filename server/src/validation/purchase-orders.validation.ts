@@ -8,9 +8,9 @@ const optionalDateField = z.union([z.string().trim().length(0), dateField]).opti
 
 export const purchaseOrderItemSchema = z.object({
   materialId: z.string().trim().min(1),
-  description: z.string().trim().min(1).max(300),
+  description: z.string().trim().max(300).optional().default(''),
   qty: numberField.positive(),
-  unit: z.string().trim().min(1).max(30),
+  unit: z.string().trim().max(30).optional().default(''),
   rate: numberField,
   taxPercent: numberField.max(100),
   receivedQty: numberField.optional().default(0),
