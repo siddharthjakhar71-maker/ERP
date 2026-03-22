@@ -1,0 +1,86 @@
+export const dashboardSnapshot = {
+  summary: [
+    { label: 'Open Purchase Orders', value: 18, change: '+12% from last month' },
+    { label: 'Pending GRNs', value: 7, change: '2 due today' },
+    { label: 'Unpaid Bills', value: '₹42.8L', change: '6 overdue' },
+    { label: 'Low Stock Alerts', value: 14, change: '4 critical materials' },
+  ],
+  monthlyPurchases: [
+    { month: 'Oct', amount: 12.4 },
+    { month: 'Nov', amount: 18.1 },
+    { month: 'Dec', amount: 16.7 },
+    { month: 'Jan', amount: 20.4 },
+    { month: 'Feb', amount: 22.9 },
+    { month: 'Mar', amount: 19.6 },
+  ],
+  vendorBreakdown: [
+    { name: 'Shree Cement Supplies', value: 34 },
+    { name: 'Metro Steel Works', value: 26 },
+    { name: 'Prime Electricals', value: 18 },
+    { name: 'BuildCore Aggregates', value: 22 },
+  ],
+  activities: [
+    { id: 'A1', title: 'PO-2026-018 approved', description: 'Tower B steel reinforcement for Skyline Residency.', time: '18 min ago' },
+    { id: 'A2', title: 'GRN-2026-043 awaiting QA signoff', description: 'Cement bags at Greenfield Heights Site.', time: '43 min ago' },
+    { id: 'A3', title: 'BILL-2026-077 due in 2 days', description: 'Invoice from Prime Electricals worth ₹6.4L.', time: '1 hr ago' },
+  ],
+};
+
+export const vendors = [
+  {
+    id: 'ven_001',
+    code: 'VEN-001',
+    name: 'Shree Cement Supplies',
+    status: 'active',
+    contactPerson: 'Ravi Mehta',
+    email: 'ravi@shreecement.example',
+    phone: '+91 98989 00001',
+    city: 'Ahmedabad',
+    paymentTermsDays: 30,
+    openingBalance: 1280000,
+    outstandingBalance: 645000,
+    recentTransactions: [
+      { type: 'PO', ref: 'PO-2026-014', amount: 485000, status: 'approved' },
+      { type: 'BILL', ref: 'BILL-2026-074', amount: 220000, status: 'unpaid' },
+    ],
+  },
+  {
+    id: 'ven_002',
+    code: 'VEN-002',
+    name: 'Metro Steel Works',
+    status: 'active',
+    contactPerson: 'Ishaan Kapoor',
+    email: 'accounts@metrosteel.example',
+    phone: '+91 98989 00002',
+    city: 'Surat',
+    paymentTermsDays: 21,
+    openingBalance: 950000,
+    outstandingBalance: 318000,
+    recentTransactions: [{ type: 'PAY', ref: 'PAY-2026-021', amount: 170000, status: 'completed' }],
+  },
+  {
+    id: 'ven_003',
+    code: 'VEN-003',
+    name: 'Prime Electricals',
+    status: 'on_hold',
+    contactPerson: 'Simran Joshi',
+    email: 'simran@primeelectricals.example',
+    phone: '+91 98989 00003',
+    city: 'Vadodara',
+    paymentTermsDays: 15,
+    openingBalance: 420000,
+    outstandingBalance: 284000,
+    recentTransactions: [{ type: 'BILL', ref: 'BILL-2026-077', amount: 640000, status: 'overdue' }],
+  },
+];
+
+export const settings = {
+  companyName: 'JAKHIRA',
+  procurementEmail: 'ops@jakhira.example',
+  purchaseOrderPrefix: 'PO',
+  grnPrefix: 'GRN',
+  billPrefix: 'BILL',
+  paymentPrefix: 'PAY',
+  fiscalYearStartMonth: 4,
+  themePreference: 'system',
+};
