@@ -13,7 +13,8 @@ import { SettingsSectionNav, SettingsSubSectionNav } from '@/components/settings
 import { useAccount, useChangePassword, useUpdateAccountProfile } from '@/hooks/use-account';
 import { useLogout } from '@/hooks/use-logout';
 import { useSettings, useUpdatePoLayoutSettings, useUpdatePoTemplateSettings, useUpdateThemeSettings } from '@/hooks/use-settings';
-import type { PoLayoutSettings, PoTemplateSettings, PoThemeSettings } from '@/types';
+import { PO_PDF_BLOCK_KEYS, createDefaultPoPdfLayoutRows } from '@/features/purchase-orders/purchase-order-pdf';
+import type { PoLayoutSettings, PoPdfBlockKey, PoPdfLayoutRow, PoTemplateSettings, PoThemeSettings, PurchaseOrderPdfBlockConfig } from '@/types';
 
 const profileSchema = z.object({
   fullName: z.string().trim().min(2, 'Full name is required').max(120, 'Full name is too long'),
@@ -84,6 +85,18 @@ type LayoutFormValues = z.infer<typeof layoutSchema>;
 type SettingsSectionId = 'general' | 'appearance' | 'purchase-order' | 'account' | 'system';
 type PurchaseOrderSubSectionId = 'template' | 'layout' | 'theme' | 'numbering' | 'terms';
 
+const blockLabelMap: Record<PoPdfBlockKey, string> = {
+  header: 'Header',
+  poDetails: 'PO details',
+  vendorDetails: 'Vendor details',
+  billTo: 'Bill to',
+  shipTo: 'Ship to',
+  lineItems: 'Line items',
+  totals: 'Totals',
+  amountInWords: 'Amount in words',
+  terms: 'Terms',
+  footer: 'Footer',
+};
 const checkboxClass = 'h-4 w-4 rounded border border-input';
 const selectClass = 'flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring';
 const textareaClass = 'min-h-[96px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring';
@@ -153,6 +166,7 @@ export const SettingsPage = () => {
   const logout = useLogout();
   const [activeSection, setActiveSection] = useState<SettingsSectionId>('general');
   const [activePurchaseOrderSection, setActivePurchaseOrderSection] = useState<PurchaseOrderSubSectionId>('template');
+  const [blockRows, setBlockRows] = useState<PoPdfLayoutRow[]>(createDefaultPoPdfLayoutRows());
 
   const summaryCards = useMemo(() => [
     { label: 'Company Name', value: settings?.companyName },
@@ -209,6 +223,7 @@ export const SettingsPage = () => {
         rateWidth: settings.poLayout.lineItemColumnWidths.rate,
         amountWidth: settings.poLayout.lineItemColumnWidths.amount,
       });
+      setBlockRows(settings.poLayout.blockRows?.length ? settings.poLayout.blockRows : createDefaultPoPdfLayoutRows());
     }
   }, [resetLayout, resetTemplate, resetTheme, settings]);
 
@@ -218,6 +233,42 @@ export const SettingsPage = () => {
     void navigate({ to: '/login', replace: true });
   }, [changePassword.isSuccess, navigate, resetPassword]);
 
+  const updateBlockRow = (rowId: string, updater: (row: PoPdfLayoutRow) => PoPdfLayoutRow) => setBlockRows((current) => current.map((row) => row.id === rowId ? updater(row) : row));
+  const moveBlock = (rowId: string, blockId: string, direction: -1 | 1) => setBlockRows((current) => current.map((row) => {
+    if (row.id !== rowId) return row;
+    const index = row.blocks.findIndex((block) => block.id === blockId);
+    const target = index + direction;
+    if (index < 0 || target < 0 || target >= row.blocks.length) return row;
+    const blocks = [...row.blocks];
+    [blocks[index], blocks[target]] = [blocks[target], blocks[index]];
+    return { ...row, blocks };
+  }));
+  const moveBlockToRow = (blockId: string, targetRowId: string) => setBlockRows((current) => {
+    let movedBlock: PurchaseOrderPdfBlockConfig | null = null;
+    const withoutBlock = current.map((row) => ({ ...row, blocks: row.blocks.filter((block) => {
+      const shouldKeep = block.id !== blockId;
+      if (!shouldKeep) movedBlock = block;
+      return shouldKeep;
+    }) })).filter((row) => row.blocks.length > 0);
+    if (!movedBlock) return current;
+    return withoutBlock.map((row) => row.id === targetRowId ? { ...row, blocks: [...row.blocks, movedBlock!] } : row);
+  });
+  const normalizedEditableRows = useMemo(() => {
+    const rows = blockRows.length ? blockRows : createDefaultPoPdfLayoutRows();
+    const seen = new Set<PoPdfBlockKey>();
+    const normalized = rows.map((row, rowIndex) => ({
+      ...row,
+      id: row.id || `row-${rowIndex + 1}`,
+      blocks: row.blocks.map((block, blockIndex) => {
+        seen.add(block.key);
+        return { ...block, id: block.id || `${block.key}-${rowIndex + 1}-${blockIndex + 1}`, span: Math.max(1, Math.min(block.span, row.columns)) };
+      }),
+    }));
+    PO_PDF_BLOCK_KEYS.forEach((key) => {
+      if (!seen.has(key)) normalized.push({ id: `row-extra-${key}`, columns: 1, blocks: [{ id: `${key}-extra`, key, span: 1, visible: true }] });
+    });
+    return normalized;
+  }, [blockRows]);
   const onSubmitTheme = (values: ThemeFormValues) => updateTheme.mutateAsync(values satisfies PoThemeSettings);
   const onSubmitTemplate = (values: TemplateFormValues) => updateTemplate.mutateAsync({
     showVendorDetails: values.showVendorDetails,
@@ -248,6 +299,7 @@ export const SettingsPage = () => {
       rate: values.rateWidth,
       amount: values.amountWidth,
     },
+    blockRows: normalizedEditableRows.filter((row) => row.blocks.length > 0),
   } satisfies PoLayoutSettings);
 
   return (
@@ -339,14 +391,72 @@ export const SettingsPage = () => {
                   ) : null}
 
                   {activePurchaseOrderSection === 'layout' ? (
-                    <SectionCard title="Layout" description="Refine spacing, block widths, and line-item column proportions for the purchase order PDF.">
-                      <form className="grid gap-4 md:grid-cols-2 xl:grid-cols-3" onSubmit={handleLayoutSubmit(onSubmitLayout)}>
-                        {[
-                          ['pageMarginX', 'Page margin X'], ['pageMarginTop', 'Page margin top'], ['pageMarginBottom', 'Page margin bottom'], ['sectionSpacing', 'Section spacing'], ['headerLeftWidthPercent', 'Header left width %'], ['headerRightWidthPercent', 'Header right width %'], ['totalsBlockWidth', 'Totals block width'], ['indexWidth', 'Index col width'], ['descriptionWidth', 'Description col width'], ['unitWidth', 'Unit col width'], ['quantityWidth', 'Quantity col width'], ['rateWidth', 'Rate col width'], ['amountWidth', 'Amount col width'],
-                        ].map(([field, label]) => <div key={field} className="space-y-2"><Label htmlFor={field}>{label}</Label><Input id={field} type="number" {...registerLayout(field as keyof LayoutFormValues)} />{layoutErrors[field as keyof LayoutFormValues] ? <p className="text-sm text-destructive">{String(layoutErrors[field as keyof LayoutFormValues]?.message ?? '')}</p> : null}</div>)}
-                        <div className="space-y-2"><Label htmlFor="sectionColumns">Section layout</Label><select id="sectionColumns" className={selectClass} {...registerLayout('sectionColumns')}><option value="2">2-column</option><option value="3">3-column</option></select></div>
-                        <div className="space-y-2"><Label htmlFor="layoutDensity">Layout density</Label><select id="layoutDensity" className={selectClass} {...registerLayout('layoutDensity')}><option value="compact">Compact</option><option value="standard">Standard</option></select></div>
-                        <div className="xl:col-span-3 flex justify-end"><Button type="submit" disabled={updateLayout.isPending}>{updateLayout.isPending ? 'Saving...' : 'Save layout settings'}</Button></div>
+                    <SectionCard title="Layout" description="Refine spacing, block widths, line-item proportions, and row-based block placement for the purchase order PDF.">
+                      <form className="grid gap-6" onSubmit={handleLayoutSubmit(onSubmitLayout)}>
+                        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                          {[
+                            ['pageMarginX', 'Page margin X'], ['pageMarginTop', 'Page margin top'], ['pageMarginBottom', 'Page margin bottom'], ['sectionSpacing', 'Section spacing'], ['headerLeftWidthPercent', 'Header left width %'], ['headerRightWidthPercent', 'Header right width %'], ['totalsBlockWidth', 'Totals block width'], ['indexWidth', 'Index col width'], ['descriptionWidth', 'Description col width'], ['unitWidth', 'Unit col width'], ['quantityWidth', 'Quantity col width'], ['rateWidth', 'Rate col width'], ['amountWidth', 'Amount col width'],
+                          ].map(([field, label]) => <div key={field} className="space-y-2"><Label htmlFor={field}>{label}</Label><Input id={field} type="number" {...registerLayout(field as keyof LayoutFormValues)} />{layoutErrors[field as keyof LayoutFormValues] ? <p className="text-sm text-destructive">{String(layoutErrors[field as keyof LayoutFormValues]?.message ?? '')}</p> : null}</div>)}
+                          <div className="space-y-2"><Label htmlFor="sectionColumns">Section layout</Label><select id="sectionColumns" className={selectClass} {...registerLayout('sectionColumns')}><option value="2">2-column</option><option value="3">3-column</option></select></div>
+                          <div className="space-y-2"><Label htmlFor="layoutDensity">Layout density</Label><select id="layoutDensity" className={selectClass} {...registerLayout('layoutDensity')}><option value="compact">Compact</option><option value="standard">Standard</option></select></div>
+                        </div>
+                        <div className="space-y-4 rounded-2xl border border-border p-5">
+                          <div>
+                            <h4 className="text-base font-semibold">PO block layout</h4>
+                            <p className="text-sm text-muted-foreground">Reorder blocks, hide sections, choose spans, and move blocks between 1, 2, or 3 column rows.</p>
+                          </div>
+                          <div className="space-y-4">
+                            {normalizedEditableRows.map((row) => (
+                              <div key={row.id} className="space-y-4 rounded-2xl border border-border/70 p-4">
+                                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                                  <div>
+                                    <p className="font-medium">{row.id}</p>
+                                    <p className="text-xs text-muted-foreground">Blocks in this row share the tallest rendered height.</p>
+                                  </div>
+                                  <div className="w-full md:w-48">
+                                    <Label htmlFor={`${row.id}-columns`}>Columns</Label>
+                                    <select id={`${row.id}-columns`} className={selectClass} value={row.columns} onChange={(event) => updateBlockRow(row.id, (currentRow) => ({ ...currentRow, columns: Number(event.target.value) as 1 | 2 | 3, blocks: currentRow.blocks.map((block) => ({ ...block, span: Math.min(block.span, Number(event.target.value)) })) }))}>
+                                      <option value={1}>1 column</option>
+                                      <option value={2}>2 columns</option>
+                                      <option value={3}>3 columns</option>
+                                    </select>
+                                  </div>
+                                </div>
+                                <div className="space-y-3">
+                                  {row.blocks.map((block, blockIndex) => (
+                                    <div key={block.id} className="grid gap-3 rounded-xl border border-border/60 p-4 md:grid-cols-[minmax(0,1.3fr)_150px_140px_120px_auto] md:items-end">
+                                      <div className="space-y-2">
+                                        <Label>Block</Label>
+                                        <div className="rounded-md border border-input bg-muted/30 px-3 py-2 text-sm font-medium">{blockLabelMap[block.key]}</div>
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${block.id}-row`}>Row</Label>
+                                        <select id={`${block.id}-row`} className={selectClass} value={row.id} onChange={(event) => moveBlockToRow(block.id, event.target.value)}>
+                                          {normalizedEditableRows.map((candidateRow) => <option key={candidateRow.id} value={candidateRow.id}>{candidateRow.id}</option>)}
+                                        </select>
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`${block.id}-span`}>Span</Label>
+                                        <select id={`${block.id}-span`} className={selectClass} value={Math.min(block.span, row.columns)} onChange={(event) => updateBlockRow(row.id, (currentRow) => ({ ...currentRow, blocks: currentRow.blocks.map((item) => item.id === block.id ? { ...item, span: Number(event.target.value) } : item) }))}>
+                                          {Array.from({ length: row.columns }, (_, index) => index + 1).map((value) => <option key={value} value={value}>Span {value}</option>)}
+                                        </select>
+                                      </div>
+                                      <label className="flex items-center gap-3 rounded-xl border border-border/60 p-3 text-sm font-medium">
+                                        <input type="checkbox" className={checkboxClass} checked={block.visible} onChange={(event) => updateBlockRow(row.id, (currentRow) => ({ ...currentRow, blocks: currentRow.blocks.map((item) => item.id === block.id ? { ...item, visible: event.target.checked } : item) }))} />
+                                        Visible
+                                      </label>
+                                      <div className="flex gap-2">
+                                        <Button type="button" variant="outline" size="sm" disabled={blockIndex === 0} onClick={() => moveBlock(row.id, block.id, -1)}>Up</Button>
+                                        <Button type="button" variant="outline" size="sm" disabled={blockIndex === row.blocks.length - 1} onClick={() => moveBlock(row.id, block.id, 1)}>Down</Button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="flex justify-end"><Button type="submit" disabled={updateLayout.isPending}>{updateLayout.isPending ? 'Saving...' : 'Save layout settings'}</Button></div>
                       </form>
                     </SectionCard>
                   ) : null}

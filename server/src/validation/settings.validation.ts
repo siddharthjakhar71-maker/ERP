@@ -4,6 +4,19 @@ const booleanField = z.boolean();
 const stringList = z.array(z.string().trim().min(1)).min(1);
 const numericField = z.number().finite();
 
+const poPdfBlockKeySchema = z.enum(['header', 'poDetails', 'vendorDetails', 'billTo', 'shipTo', 'lineItems', 'totals', 'amountInWords', 'terms', 'footer']);
+const poPdfBlockSchema = z.object({
+  id: z.string().trim().min(1),
+  key: poPdfBlockKeySchema,
+  span: z.number().int().min(1).max(3),
+  visible: z.boolean(),
+});
+const poPdfLayoutRowSchema = z.object({
+  id: z.string().trim().min(1),
+  columns: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+  blocks: z.array(poPdfBlockSchema).min(1),
+});
+
 export const poThemeSettingsSchema = z.object({
   companyName: z.string().trim().min(2).max(160),
   logoUrl: z.union([z.string().trim().url(), z.literal('')]),
@@ -48,6 +61,7 @@ export const poLayoutSettingsSchema = z.object({
   }),
   totalsBlockWidth: numericField.min(140).max(260),
   layoutDensity: z.enum(['compact', 'standard']),
+  blockRows: z.array(poPdfLayoutRowSchema).min(1),
 });
 
 export const updateThemeSettingsSchema = z.object({ body: poThemeSettingsSchema, query: z.object({}).optional(), params: z.object({}).optional() });
