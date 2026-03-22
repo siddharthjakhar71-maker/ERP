@@ -78,6 +78,48 @@ CREATE TABLE IF NOT EXISTS materials (
   updated_at INTEGER NOT NULL DEFAULT (unixepoch()),
   FOREIGN KEY (created_by) REFERENCES users(id)
 );
+
+CREATE TABLE IF NOT EXISTS purchase_orders (
+  id TEXT PRIMARY KEY,
+  po_number TEXT NOT NULL UNIQUE,
+  vendor_id TEXT NOT NULL,
+  site_id TEXT NOT NULL,
+  po_date INTEGER NOT NULL,
+  expected_delivery_date INTEGER,
+  billing_address TEXT,
+  shipping_address TEXT,
+  subtotal REAL NOT NULL DEFAULT 0,
+  tax_amount REAL NOT NULL DEFAULT 0,
+  discount_amount REAL NOT NULL DEFAULT 0,
+  total_amount REAL NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'draft',
+  remarks TEXT,
+  created_by TEXT,
+  created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+  updated_at INTEGER NOT NULL DEFAULT (unixepoch()),
+  FOREIGN KEY (vendor_id) REFERENCES vendors(id),
+  FOREIGN KEY (site_id) REFERENCES sites(id),
+  FOREIGN KEY (created_by) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS purchase_order_items (
+  id TEXT PRIMARY KEY,
+  purchase_order_id TEXT NOT NULL,
+  material_id TEXT NOT NULL,
+  description TEXT NOT NULL,
+  qty REAL NOT NULL,
+  unit TEXT NOT NULL,
+  rate REAL NOT NULL,
+  tax_percent REAL NOT NULL DEFAULT 0,
+  tax_amount REAL NOT NULL DEFAULT 0,
+  line_total REAL NOT NULL,
+  received_qty REAL NOT NULL DEFAULT 0,
+  pending_qty REAL NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+  updated_at INTEGER NOT NULL DEFAULT (unixepoch()),
+  FOREIGN KEY (purchase_order_id) REFERENCES purchase_orders(id) ON DELETE CASCADE,
+  FOREIGN KEY (material_id) REFERENCES materials(id)
+);
 `;
 
 type TableColumn = { name: string };
@@ -194,6 +236,33 @@ const migrateCrudTables = () => {
   ensureColumn('sites', 'site_code TEXT');
   ensureColumn('sites', 'location TEXT');
   ensureColumn('sites', 'address TEXT');
+
+  ensureColumn('purchase_orders', 'po_number TEXT');
+  ensureColumn('purchase_orders', 'vendor_id TEXT');
+  ensureColumn('purchase_orders', 'site_id TEXT');
+  ensureColumn('purchase_orders', 'po_date INTEGER');
+  ensureColumn('purchase_orders', 'expected_delivery_date INTEGER');
+  ensureColumn('purchase_orders', 'billing_address TEXT');
+  ensureColumn('purchase_orders', 'shipping_address TEXT');
+  ensureColumn('purchase_orders', 'subtotal REAL NOT NULL DEFAULT 0');
+  ensureColumn('purchase_orders', 'tax_amount REAL NOT NULL DEFAULT 0');
+  ensureColumn('purchase_orders', 'discount_amount REAL NOT NULL DEFAULT 0');
+  ensureColumn('purchase_orders', 'total_amount REAL NOT NULL DEFAULT 0');
+  ensureColumn('purchase_orders', `status TEXT NOT NULL DEFAULT 'draft'`);
+  ensureColumn('purchase_orders', 'remarks TEXT');
+  ensureColumn('purchase_orders', 'created_by TEXT');
+
+  ensureColumn('purchase_order_items', 'purchase_order_id TEXT');
+  ensureColumn('purchase_order_items', 'material_id TEXT');
+  ensureColumn('purchase_order_items', `description TEXT NOT NULL DEFAULT ''`);
+  ensureColumn('purchase_order_items', 'qty REAL NOT NULL DEFAULT 0');
+  ensureColumn('purchase_order_items', `unit TEXT NOT NULL DEFAULT ''`);
+  ensureColumn('purchase_order_items', 'rate REAL NOT NULL DEFAULT 0');
+  ensureColumn('purchase_order_items', 'tax_percent REAL NOT NULL DEFAULT 0');
+  ensureColumn('purchase_order_items', 'tax_amount REAL NOT NULL DEFAULT 0');
+  ensureColumn('purchase_order_items', 'line_total REAL NOT NULL DEFAULT 0');
+  ensureColumn('purchase_order_items', 'received_qty REAL NOT NULL DEFAULT 0');
+  ensureColumn('purchase_order_items', 'pending_qty REAL NOT NULL DEFAULT 0');
 
   copyLegacyVendors();
   copyLegacyMaterials();

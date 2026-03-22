@@ -82,3 +82,78 @@ export interface SettingsRecord {
   fiscalYearStartMonth: number;
   themePreference: string;
 }
+
+
+export type PurchaseOrderStatus = 'draft' | 'approved' | 'partial' | 'completed' | 'cancelled';
+
+export interface PurchaseOrderItemPayload {
+  materialId: string;
+  description: string;
+  qty: number;
+  unit: string;
+  rate: number;
+  taxPercent: number;
+  receivedQty?: number;
+}
+
+export interface PurchaseOrderPayload {
+  poNumber: string;
+  vendorId: string;
+  siteId: string;
+  poDate: string;
+  expectedDeliveryDate?: string;
+  billingAddress: string;
+  shippingAddress: string;
+  discountAmount: number;
+  status: PurchaseOrderStatus;
+  remarks: string;
+  createdBy?: string;
+  items: PurchaseOrderItemPayload[];
+}
+
+export interface PurchaseOrderListRecord {
+  id: string;
+  poNumber: string;
+  vendorId: string;
+  siteId: string;
+  poDate: string;
+  expectedDeliveryDate?: string | null;
+  billingAddress?: string | null;
+  shippingAddress?: string | null;
+  subtotal: number;
+  taxAmount: number;
+  discountAmount: number;
+  totalAmount: number;
+  status: PurchaseOrderStatus;
+  remarks?: string | null;
+  createdBy?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  itemCount: number;
+  vendor: { id: string; name: string; vendorCode: string };
+  site: { id: string; name: string; siteCode: string };
+}
+
+export interface PurchaseOrderItemRecord {
+  id: string;
+  purchaseOrderId: string;
+  materialId: string;
+  description: string;
+  qty: number;
+  unit: string;
+  rate: number;
+  taxPercent: number;
+  taxAmount: number;
+  lineTotal: number;
+  receivedQty: number;
+  pendingQty: number;
+  createdAt: string;
+  updatedAt: string;
+  material: { id: string; name: string; materialCode: string };
+}
+
+export interface PurchaseOrderRecord extends Omit<PurchaseOrderListRecord, 'itemCount'> {
+  items: PurchaseOrderItemRecord[];
+  vendor: { id: string; name: string; vendorCode: string; address?: string | null; phone?: string | null; email?: string | null };
+  site: { id: string; name: string; siteCode: string; address?: string | null; location?: string | null };
+}

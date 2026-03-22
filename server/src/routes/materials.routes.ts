@@ -13,7 +13,7 @@ router.get('/', validate(materialQuerySchema), asyncHandler(async (req, res) => 
 }));
 
 router.get('/:id', validate(idParamSchema), asyncHandler(async (req, res) => {
-  const material = await service.getById(req.params.id);
+  const material = await service.getById(req.params.id as string);
   if (!material) throw new ApiError(404, 'Material not found');
   ok(res, material);
 }));
@@ -23,11 +23,11 @@ router.post('/', validate(createMaterialSchema), asyncHandler(async (req, res) =
 }));
 
 router.put('/:id', validate(updateMaterialSchema), asyncHandler(async (req, res) => {
-  ok(res, await service.update(req.params.id, req.body), 'Material updated');
+  ok(res, await service.update(req.params.id as string, req.body), 'Material updated');
 }));
 
 router.delete('/:id', validate(idParamSchema), asyncHandler(async (req, res) => {
-  ok(res, await service.remove(req.params.id), 'Material deleted');
+  ok(res, await service.remove(req.params.id as string), 'Material deleted');
 }));
 
 export default router;
