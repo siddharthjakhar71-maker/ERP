@@ -57,9 +57,10 @@ export interface MaterialRecord {
   hsnCode?: string | null;
   description?: string | null;
   status: ModuleStatus;
+  defaultRate?: number;
 }
 
-export type MaterialPayload = Omit<MaterialRecord, 'id'>;
+export type MaterialPayload = Omit<MaterialRecord, 'id' | 'defaultRate'>;
 
 export interface SiteRecord {
   id: string;
@@ -82,7 +83,6 @@ export interface SettingsRecord {
   fiscalYearStartMonth: number;
   themePreference: string;
 }
-
 
 export type PurchaseOrderStatus = 'draft' | 'approved' | 'partial' | 'completed' | 'cancelled';
 

@@ -11,6 +11,9 @@ export interface PurchaseOrderItemDraft {
   rate: number;
   taxPercent: number;
   receivedQty: number;
+  unitTouched?: boolean;
+  rateTouched?: boolean;
+  descriptionTouched?: boolean;
 }
 
 interface PurchaseOrderItemsTableProps {
@@ -20,12 +23,13 @@ interface PurchaseOrderItemsTableProps {
   onAdd: () => void;
   onRemove: (index: number) => void;
   onChange: <K extends keyof PurchaseOrderItemDraft>(index: number, field: K, value: PurchaseOrderItemDraft[K]) => void;
+  onMaterialSelect: (index: number, materialId: string) => void;
 }
 
 const round = (value: number) => Number(value.toFixed(2));
 const cellInputClassName = 'min-w-0';
 
-export const PurchaseOrderItemsTable = ({ items, materials, disabled, onAdd, onRemove, onChange }: PurchaseOrderItemsTableProps) => (
+export const PurchaseOrderItemsTable = ({ items, materials, disabled, onAdd, onRemove, onChange, onMaterialSelect }: PurchaseOrderItemsTableProps) => (
   <div className="space-y-4">
     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
       <div>
@@ -39,10 +43,10 @@ export const PurchaseOrderItemsTable = ({ items, materials, disabled, onAdd, onR
 
     <div className="overflow-hidden rounded-3xl border border-border bg-card/40">
       <div className="overflow-x-auto">
-        <table className="min-w-[980px] divide-y divide-border text-sm">
+        <table className="min-w-[1120px] divide-y divide-border text-sm">
           <thead className="bg-muted/60">
             <tr>
-              {['Material', 'Description', 'Qty', 'Unit', 'Rate', 'Amount', 'Remove'].map((label) => (
+              {['Material', 'Description', 'Qty', 'Unit', 'Rate', 'Tax %', 'Amount', 'Remove'].map((label) => (
                 <th key={label} className="px-4 py-3 text-left font-medium text-muted-foreground">{label}</th>
               ))}
             </tr>
@@ -57,14 +61,7 @@ export const PurchaseOrderItemsTable = ({ items, materials, disabled, onAdd, onR
                       className="h-11 w-full min-w-0 rounded-2xl border border-input bg-background px-4 text-sm"
                       value={item.materialId}
                       disabled={disabled}
-                      onChange={(event) => {
-                        const material = materials.find((entry) => entry.id === event.target.value);
-                        onChange(index, 'materialId', event.target.value);
-                        if (material) {
-                          onChange(index, 'description', material.description || material.name);
-                          onChange(index, 'unit', material.unit);
-                        }
-                      }}
+                      onChange={(event) => onMaterialSelect(index, event.target.value)}
                     >
                       <option value="">Select material</option>
                       {materials.map((material) => (
@@ -83,6 +80,9 @@ export const PurchaseOrderItemsTable = ({ items, materials, disabled, onAdd, onR
                   </td>
                   <td className="w-[140px] min-w-[140px] px-4 py-3">
                     <Input className={cellInputClassName} type="number" min="0" step="0.01" value={item.rate} disabled={disabled} onChange={(event) => onChange(index, 'rate', Number(event.target.value))} />
+                  </td>
+                  <td className="w-[120px] min-w-[120px] px-4 py-3">
+                    <Input className={cellInputClassName} type="number" min="0" max="100" step="0.01" value={item.taxPercent} disabled={disabled} onChange={(event) => onChange(index, 'taxPercent', Number(event.target.value))} />
                   </td>
                   <td className="w-[140px] min-w-[140px] px-4 py-3 font-medium text-foreground">{amount.toFixed(2)}</td>
                   <td className="w-[96px] min-w-[96px] px-4 py-3">

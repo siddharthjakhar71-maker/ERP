@@ -9,7 +9,12 @@ const router = Router();
 const service = new MaterialsService();
 
 router.get('/', validate(materialQuerySchema), asyncHandler(async (req, res) => {
-  ok(res, await service.list({ status: req.query.status as string | undefined, category: req.query.category as string | undefined, q: req.query.q as string | undefined }));
+  ok(res, await service.list({
+    status: req.query.status as string | undefined,
+    category: req.query.category as string | undefined,
+    q: req.query.q as string | undefined,
+    vendorId: req.query.vendorId as string | undefined,
+  }));
 }));
 
 router.get('/:id', validate(idParamSchema), asyncHandler(async (req, res) => {

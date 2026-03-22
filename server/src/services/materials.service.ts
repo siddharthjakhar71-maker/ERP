@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import { and, desc, eq, like, or } from 'drizzle-orm';
+import { and, desc, eq, like, or, sql } from 'drizzle-orm';
 import { db } from '../db/client.js';
-import { materials } from '../../../shared/schema/index.js';
+import { materials, vendorMaterialRates } from '../../../shared/schema/index.js';
 import type { MaterialPayload } from '../validation/materials.validation.js';
 import { ApiError } from '../utils/http.js';
 import { handleDatabaseError } from '../utils/errors.js';
@@ -20,9 +20,37 @@ const buildMaterialSearch = (query?: string) => {
 };
 
 export class MaterialsService {
-  async list(filters: { status?: string; category?: string; q?: string }) {
+  async list(filters: { status?: string; category?: string; q?: string; vendorId?: string }) {
+    const defaultRateSubquery = filters.vendorId
+      ? sql<number>`(
+          select ${vendorMaterialRates.rate}
+          from ${vendorMaterialRates}
+          where ${vendorMaterialRates.materialId} = ${materials.id}
+            and ${vendorMaterialRates.vendorId} = ${filters.vendorId}
+          order by ${vendorMaterialRates.isPreferred} desc, ${vendorMaterialRates.updatedAt} desc
+          limit 1
+        )`
+      : sql<number>`(
+          select ${vendorMaterialRates.rate}
+          from ${vendorMaterialRates}
+          where ${vendorMaterialRates.materialId} = ${materials.id}
+          order by ${vendorMaterialRates.isPreferred} desc, ${vendorMaterialRates.updatedAt} desc
+          limit 1
+        )`;
+
     return db
-      .select()
+      .select({
+        id: materials.id,
+        materialCode: materials.materialCode,
+        name: materials.name,
+        category: materials.category,
+        subcategory: materials.subcategory,
+        unit: materials.unit,
+        hsnCode: materials.hsnCode,
+        description: materials.description,
+        status: materials.status,
+        defaultRate: sql<number>`coalesce(${defaultRateSubquery}, 0)`,
+      })
       .from(materials)
       .where(
         and(
