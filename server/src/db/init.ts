@@ -50,6 +50,9 @@ CREATE TABLE IF NOT EXISTS system_settings (
   payment_prefix TEXT NOT NULL DEFAULT 'PAY',
   default_currency TEXT NOT NULL DEFAULT 'INR',
   fiscal_year_start_month INTEGER NOT NULL DEFAULT 4,
+  po_theme_settings TEXT NOT NULL DEFAULT '{}',
+  po_template_settings TEXT NOT NULL DEFAULT '{}',
+  po_layout_settings TEXT NOT NULL DEFAULT '{}',
   created_at INTEGER NOT NULL DEFAULT (unixepoch()),
   updated_at INTEGER NOT NULL DEFAULT (unixepoch())
 );
@@ -261,6 +264,10 @@ const migrateCrudTables = () => {
   ensureColumn('sites', 'location TEXT');
   ensureColumn('sites', 'address TEXT');
 
+  ensureColumn('system_settings', `po_theme_settings TEXT NOT NULL DEFAULT '{}'`);
+  ensureColumn('system_settings', `po_template_settings TEXT NOT NULL DEFAULT '{}'`);
+  ensureColumn('system_settings', `po_layout_settings TEXT NOT NULL DEFAULT '{}'`);
+
   ensureColumn('password_resets', 'user_id TEXT');
   ensureColumn('password_resets', 'token TEXT');
   ensureColumn('password_resets', 'expires_at INTEGER');
@@ -467,6 +474,42 @@ export const initializeDatabase = async () => {
       paymentPrefix: 'PAY',
       defaultCurrency: 'INR',
       fiscalYearStartMonth: 4,
+      poThemeSettings: JSON.stringify({
+        companyName: 'JAKHIRA ERP',
+        logoUrl: '',
+        primaryColor: '#0F766E',
+        baseFontSize: 9,
+        headingFontSize: 16,
+        tableFontSize: 8,
+        borderStyle: 'solid',
+        footerStyle: 'standard',
+        currencyCode: 'INR',
+        currencyLabel: 'Rs.',
+        currencyLocale: 'en-IN',
+      }),
+      poTemplateSettings: JSON.stringify({
+        showVendorDetails: true,
+        showBillTo: true,
+        showShipTo: true,
+        showAmountInWords: true,
+        showTermsAndConditions: true,
+        showPreparedBy: true,
+        showSignatory: true,
+        visiblePoDetailFields: ['projectName', 'projectAddress', 'poNumber', 'poDate', 'billingName', 'billingAddress'],
+        visibleLineItemColumns: ['index', 'description', 'unit', 'quantity', 'rate', 'amount'],
+      }),
+      poLayoutSettings: JSON.stringify({
+        pageMarginX: 40,
+        pageMarginTop: 44,
+        pageMarginBottom: 42,
+        sectionSpacing: 12,
+        headerLeftWidthPercent: 55,
+        headerRightWidthPercent: 45,
+        sectionColumns: '2',
+        lineItemColumnWidths: { index: 42, description: 239, unit: 46, quantity: 52, rate: 68, amount: 68 },
+        totalsBlockWidth: 190,
+        layoutDensity: 'standard',
+      }),
     });
   }
 };

@@ -48,6 +48,9 @@ export const systemSettings = sqliteTable('system_settings', {
   paymentPrefix: text('payment_prefix').notNull().default('PAY'),
   defaultCurrency: text('default_currency').notNull().default('INR'),
   fiscalYearStartMonth: integer('fiscal_year_start_month').notNull().default(4),
+  poThemeSettings: text('po_theme_settings').notNull().default('{}'),
+  poTemplateSettings: text('po_template_settings').notNull().default('{}'),
+  poLayoutSettings: text('po_layout_settings').notNull().default('{}'),
   ...timestamps,
 });
 

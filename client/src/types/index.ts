@@ -73,6 +73,45 @@ export interface SiteRecord {
 
 export type SitePayload = Omit<SiteRecord, 'id'>;
 
+export interface PoThemeSettings {
+  companyName: string;
+  logoUrl: string;
+  primaryColor: string;
+  baseFontSize: number;
+  headingFontSize: number;
+  tableFontSize: number;
+  borderStyle: 'solid' | 'dashed' | 'double';
+  footerStyle: 'minimal' | 'standard' | 'detailed';
+  currencyCode: string;
+  currencyLabel: string;
+  currencyLocale: string;
+}
+
+export interface PoTemplateSettings {
+  showVendorDetails: boolean;
+  showBillTo: boolean;
+  showShipTo: boolean;
+  showAmountInWords: boolean;
+  showTermsAndConditions: boolean;
+  showPreparedBy: boolean;
+  showSignatory: boolean;
+  visiblePoDetailFields: string[];
+  visibleLineItemColumns: Array<'index' | 'description' | 'unit' | 'quantity' | 'rate' | 'amount'>;
+}
+
+export interface PoLayoutSettings {
+  pageMarginX: number;
+  pageMarginTop: number;
+  pageMarginBottom: number;
+  sectionSpacing: number;
+  headerLeftWidthPercent: number;
+  headerRightWidthPercent: number;
+  sectionColumns: '2' | '3';
+  lineItemColumnWidths: Record<'index' | 'description' | 'unit' | 'quantity' | 'rate' | 'amount', number>;
+  totalsBlockWidth: number;
+  layoutDensity: 'compact' | 'standard';
+}
+
 export interface SettingsRecord {
   companyName: string;
   procurementEmail: string;
@@ -82,6 +121,9 @@ export interface SettingsRecord {
   paymentPrefix: string;
   fiscalYearStartMonth: number;
   themePreference: string;
+  poTheme: PoThemeSettings;
+  poTemplate: PoTemplateSettings;
+  poLayout: PoLayoutSettings;
 }
 
 export type PurchaseOrderStatus = 'draft' | 'approved' | 'partial' | 'completed' | 'cancelled';
