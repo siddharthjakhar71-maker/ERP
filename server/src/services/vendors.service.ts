@@ -1,40 +1,81 @@
-import { z } from 'zod';
-import { vendors } from './mock-data.js';
+import { randomUUID } from 'node:crypto';
+import { and, desc, eq, getTableColumns, like, or, sql } from 'drizzle-orm';
+import { db } from '../db/client.js';
+import { vendors } from '../../../shared/schema/index.js';
+import type { VendorPayload } from '../validation/vendors.validation.js';
+import { ApiError } from '../utils/http.js';
+import { handleDatabaseError } from '../utils/errors.js';
 
-export const vendorInputSchema = z.object({
-  body: z.object({
-    code: z.string().min(2),
-    name: z.string().min(2),
-    contactPerson: z.string().min(2),
-    email: z.string().email(),
-    phone: z.string().min(6),
-    city: z.string().min(2),
-    paymentTermsDays: z.number().min(0),
-    status: z.enum(['active', 'inactive', 'on_hold']),
-  }),
-  query: z.object({}).default({}),
-  params: z.object({}).default({}),
-});
+const buildVendorSearch = (query?: string) => {
+  if (!query) return undefined;
+  const term = `%${query.trim()}%`;
+  return or(like(vendors.name, term), like(vendors.code, term), like(vendors.city, term), like(vendors.contactPerson, term));
+};
 
 export class VendorsService {
-  async list(status?: string) {
-    return status ? vendors.filter((vendor) => vendor.status === status) : vendors;
+  async list(filters: { status?: string; q?: string }) {
+    const where = and(filters.status ? eq(vendors.status, filters.status as typeof vendors.$inferSelect.status) : undefined, buildVendorSearch(filters.q));
+
+    const rows = await db
+      .select({
+        ...getTableColumns(vendors),
+        outstandingBalance: sql<number>`coalesce(${vendors.openingBalance}, 0)`,
+      })
+      .from(vendors)
+      .where(where)
+      .orderBy(desc(vendors.createdAt));
+
+    return rows.map((row) => ({ ...row, recentTransactions: [] }));
   }
 
   async getById(id: string) {
-    return vendors.find((vendor) => vendor.id === id);
+    const [row] = await db
+      .select({
+        ...getTableColumns(vendors),
+        outstandingBalance: sql<number>`coalesce(${vendors.openingBalance}, 0)`,
+      })
+      .from(vendors)
+      .where(eq(vendors.id, id));
+
+    return row ? { ...row, recentTransactions: [] } : null;
   }
 
-  async create(input: z.infer<typeof vendorInputSchema>['body']) {
-    const record = {
-      id: `ven_${vendors.length + 1}`,
-      ...input,
-      openingBalance: 0,
-      outstandingBalance: 0,
-      recentTransactions: [],
-    };
+  async create(input: VendorPayload) {
+    try {
+      const record = {
+        id: randomUUID(),
+        ...input,
+        openingBalance: 0,
+      };
 
-    vendors.unshift(record);
-    return record;
+      await db.insert(vendors).values(record);
+      return this.getById(record.id);
+    } catch (error) {
+      handleDatabaseError(error, 'Vendor');
+    }
+  }
+
+  async update(id: string, input: VendorPayload) {
+    const existing = await this.getById(id);
+    if (!existing) {
+      throw new ApiError(404, 'Vendor not found');
+    }
+
+    try {
+      await db.update(vendors).set({ ...input, updatedAt: new Date() }).where(eq(vendors.id, id));
+      return this.getById(id);
+    } catch (error) {
+      handleDatabaseError(error, 'Vendor');
+    }
+  }
+
+  async remove(id: string) {
+    const existing = await this.getById(id);
+    if (!existing) {
+      throw new ApiError(404, 'Vendor not found');
+    }
+
+    await db.delete(vendors).where(eq(vendors.id, id));
+    return existing;
   }
 }
