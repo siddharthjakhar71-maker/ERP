@@ -1,10 +1,11 @@
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useCreateVendor } from '@/hooks/use-vendors';
+import type { VendorPayload, VendorRecord } from '@/types';
 
 const vendorSchema = z.object({
   code: z.string().min(2),
@@ -13,29 +14,62 @@ const vendorSchema = z.object({
   email: z.string().email(),
   phone: z.string().min(6),
   city: z.string().min(2),
+  state: z.string().optional().default(''),
   paymentTermsDays: z.coerce.number().min(0),
   status: z.enum(['active', 'inactive', 'on_hold']),
 });
 
 type VendorFormValues = z.infer<typeof vendorSchema>;
 
-export const VendorForm = () => {
-  const createVendor = useCreateVendor();
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<VendorFormValues>({
+const defaultValues: VendorFormValues = {
+  code: '',
+  name: '',
+  contactPerson: '',
+  email: '',
+  phone: '',
+  city: '',
+  state: '',
+  paymentTermsDays: 30,
+  status: 'active',
+};
+
+export const VendorForm = ({
+  vendor,
+  isSubmitting,
+  onCancel,
+  onSubmit,
+}: {
+  vendor?: VendorRecord | null;
+  isSubmitting?: boolean;
+  onCancel: () => void;
+  onSubmit: (values: VendorPayload) => Promise<void> | void;
+}) => {
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<VendorFormValues>({
     resolver: zodResolver(vendorSchema),
-    defaultValues: {
-      status: 'active',
-      paymentTermsDays: 30,
-    },
+    defaultValues,
   });
 
-  const onSubmit = async (values: VendorFormValues) => {
-    await createVendor.mutateAsync(values);
-    reset();
-  };
+  useEffect(() => {
+    reset(vendor ? {
+      code: vendor.code,
+      name: vendor.name,
+      contactPerson: vendor.contactPerson,
+      email: vendor.email,
+      phone: vendor.phone,
+      city: vendor.city,
+      state: vendor.state ?? '',
+      paymentTermsDays: vendor.paymentTermsDays,
+      status: vendor.status,
+    } : defaultValues);
+  }, [vendor, reset]);
 
   return (
-    <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSubmit(onSubmit)}>
+    <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSubmit(async (values) => { await onSubmit(values); })}>
       {[
         ['code', 'Vendor Code'],
         ['name', 'Vendor Name'],
@@ -43,6 +77,7 @@ export const VendorForm = () => {
         ['email', 'Email'],
         ['phone', 'Phone'],
         ['city', 'City'],
+        ['state', 'State'],
       ].map(([field, label]) => (
         <div key={field} className="space-y-2">
           <Label htmlFor={field}>{label}</Label>
@@ -62,8 +97,9 @@ export const VendorForm = () => {
           <option value="on_hold">On Hold</option>
         </select>
       </div>
-      <div className="md:col-span-2 flex justify-end">
-        <Button type="submit" disabled={createVendor.isPending}>{createVendor.isPending ? 'Saving...' : 'Add Vendor'}</Button>
+      <div className="md:col-span-2 flex justify-end gap-3">
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>Cancel</Button>
+        <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : vendor ? 'Save changes' : 'Add vendor'}</Button>
       </div>
     </form>
   );
