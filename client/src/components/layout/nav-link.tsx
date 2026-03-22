@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 
 export const NavLink = ({ item, collapsed }: { item: { label: string; href: string; icon: LucideIcon }; collapsed: boolean }) => {
   const location = useLocation();
-  const isActive = location.pathname === item.href;
+  const isActive = item.href === '/' ? location.pathname === item.href : location.pathname === item.href || location.pathname.startsWith(`${item.href}/`);
   const Icon = item.icon;
 
   return (
