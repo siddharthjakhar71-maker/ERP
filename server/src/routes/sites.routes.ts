@@ -13,7 +13,7 @@ router.get('/', validate(siteQuerySchema), asyncHandler(async (req, res) => {
 }));
 
 router.get('/:id', validate(idParamSchema), asyncHandler(async (req, res) => {
-  const site = await service.getById(req.params.id);
+  const site = await service.getById(req.params.id as string);
   if (!site) throw new ApiError(404, 'Site not found');
   ok(res, site);
 }));
@@ -23,11 +23,11 @@ router.post('/', validate(createSiteSchema), asyncHandler(async (req, res) => {
 }));
 
 router.put('/:id', validate(updateSiteSchema), asyncHandler(async (req, res) => {
-  ok(res, await service.update(req.params.id, req.body), 'Site updated');
+  ok(res, await service.update(req.params.id as string, req.body), 'Site updated');
 }));
 
 router.delete('/:id', validate(idParamSchema), asyncHandler(async (req, res) => {
-  ok(res, await service.remove(req.params.id), 'Site deleted');
+  ok(res, await service.remove(req.params.id as string), 'Site deleted');
 }));
 
 export default router;

@@ -96,34 +96,40 @@ export const vendorMaterialRates = sqliteTable('vendor_material_rates', {
   ...timestamps,
 });
 
+export const purchaseOrderStatuses = ['draft', 'approved', 'partial', 'completed', 'cancelled'] as const;
+
 export const purchaseOrders = sqliteTable('purchase_orders', {
   id: text('id').primaryKey(),
   poNumber: text('po_number').notNull().unique(),
   vendorId: text('vendor_id').notNull().references(() => vendors.id),
   siteId: text('site_id').notNull().references(() => sites.id),
-  orderDate: integer('order_date', { mode: 'timestamp' }).notNull(),
+  poDate: integer('po_date', { mode: 'timestamp' }).notNull(),
   expectedDeliveryDate: integer('expected_delivery_date', { mode: 'timestamp' }),
   billingAddress: text('billing_address'),
   shippingAddress: text('shipping_address'),
-  status: text('status', { enum: ['draft', 'approved', 'partially_received', 'completed', 'cancelled'] }).notNull().default('draft'),
   subtotal: real('subtotal').notNull().default(0),
   taxAmount: real('tax_amount').notNull().default(0),
   discountAmount: real('discount_amount').notNull().default(0),
   totalAmount: real('total_amount').notNull().default(0),
-  notes: text('notes'),
+  status: text('status', { enum: purchaseOrderStatuses }).notNull().default('draft'),
+  remarks: text('remarks'),
   createdBy: text('created_by').references(() => users.id),
   ...timestamps,
 });
 
 export const purchaseOrderItems = sqliteTable('purchase_order_items', {
   id: text('id').primaryKey(),
-  purchaseOrderId: text('purchase_order_id').notNull().references(() => purchaseOrders.id),
+  purchaseOrderId: text('purchase_order_id').notNull().references(() => purchaseOrders.id, { onDelete: 'cascade' }),
   materialId: text('material_id').notNull().references(() => materials.id),
-  quantity: real('quantity').notNull(),
-  unitRate: real('unit_rate').notNull(),
-  taxRate: real('tax_rate').notNull().default(0),
-  discountRate: real('discount_rate').notNull().default(0),
+  description: text('description').notNull(),
+  qty: real('qty').notNull(),
+  unit: text('unit').notNull(),
+  rate: real('rate').notNull(),
+  taxPercent: real('tax_percent').notNull().default(0),
+  taxAmount: real('tax_amount').notNull().default(0),
   lineTotal: real('line_total').notNull(),
+  receivedQty: real('received_qty').notNull().default(0),
+  pendingQty: real('pending_qty').notNull().default(0),
   ...timestamps,
 });
 
@@ -236,3 +242,23 @@ export const siteRelations = relations(sites, ({ many }) => ({
   purchaseOrders: many(purchaseOrders),
   stockLedger: many(stockLedger),
 }));
+
+export const purchaseOrderRelations = relations(purchaseOrders, ({ one, many }) => ({
+  vendor: one(vendors, { fields: [purchaseOrders.vendorId], references: [vendors.id] }),
+  site: one(sites, { fields: [purchaseOrders.siteId], references: [sites.id] }),
+  items: many(purchaseOrderItems),
+  grns: many(grns),
+  bills: many(bills),
+}));
+
+export const purchaseOrderItemRelations = relations(purchaseOrderItems, ({ one, many }) => ({
+  purchaseOrder: one(purchaseOrders, { fields: [purchaseOrderItems.purchaseOrderId], references: [purchaseOrders.id] }),
+  material: one(materials, { fields: [purchaseOrderItems.materialId], references: [materials.id] }),
+  grnItems: many(grnItems),
+}));
+
+export type PurchaseOrderStatus = (typeof purchaseOrderStatuses)[number];
+export type PurchaseOrder = typeof purchaseOrders.$inferSelect;
+export type NewPurchaseOrder = typeof purchaseOrders.$inferInsert;
+export type PurchaseOrderItem = typeof purchaseOrderItems.$inferSelect;
+export type NewPurchaseOrderItem = typeof purchaseOrderItems.$inferInsert;

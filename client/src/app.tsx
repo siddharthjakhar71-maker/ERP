@@ -6,6 +6,7 @@ import { AppShell } from '@/components/layout/app-shell';
 import { DashboardPage } from '@/pages/dashboard/dashboard-page';
 import { LoginPage } from '@/pages/auth/login-page';
 import { MaterialsPage } from '@/pages/materials/materials-page';
+import { PurchaseOrdersPage } from '@/pages/purchase-orders/purchase-orders-page';
 import { SettingsPage } from '@/pages/settings/settings-page';
 import { SitesPage } from '@/pages/sites/sites-page';
 import { VendorsPage } from '@/pages/vendors/vendors-page';
@@ -32,7 +33,7 @@ const settingsRoute = createRoute({ getParentRoute: () => appRoute, path: '/sett
 
 const stubPage = (title: string, description: string) => () => <div className="rounded-3xl border border-border bg-card p-8 shadow-soft"><h1 className="text-2xl font-semibold">{title}</h1><p className="mt-3 text-sm text-muted-foreground">{description}</p></div>;
 
-const purchaseRoute = createRoute({ getParentRoute: () => appRoute, path: '/purchase-orders', component: stubPage('Purchase Orders', 'Phase 3 module scaffold for multi-line PO creation and approval tracking.') });
+const purchaseRoute = createRoute({ getParentRoute: () => appRoute, path: '/purchase-orders', component: PurchaseOrdersPage });
 const grnRoute = createRoute({ getParentRoute: () => appRoute, path: '/grn', component: stubPage('GRN', 'Phase 4 module scaffold for receipt posting, QC disposition, and inward stock updates.') });
 const billsRoute = createRoute({ getParentRoute: () => appRoute, path: '/bills', component: stubPage('Bills', 'Phase 5 module scaffold for AP invoice matching and due management.') });
 const paymentsRoute = createRoute({ getParentRoute: () => appRoute, path: '/payments', component: stubPage('Payments', 'Phase 5 module scaffold for vendor settlement and reference tracking.') });

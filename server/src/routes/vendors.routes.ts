@@ -13,7 +13,7 @@ router.get('/', validate(vendorQuerySchema), asyncHandler(async (req, res) => {
 }));
 
 router.get('/:id', validate(idParamSchema), asyncHandler(async (req, res) => {
-  const vendor = await service.getById(req.params.id);
+  const vendor = await service.getById(req.params.id as string);
   if (!vendor) throw new ApiError(404, 'Vendor not found');
   ok(res, vendor);
 }));
@@ -23,11 +23,11 @@ router.post('/', validate(createVendorSchema), asyncHandler(async (req, res) => 
 }));
 
 router.put('/:id', validate(updateVendorSchema), asyncHandler(async (req, res) => {
-  ok(res, await service.update(req.params.id, req.body), 'Vendor updated');
+  ok(res, await service.update(req.params.id as string, req.body), 'Vendor updated');
 }));
 
 router.delete('/:id', validate(idParamSchema), asyncHandler(async (req, res) => {
-  ok(res, await service.remove(req.params.id), 'Vendor deleted');
+  ok(res, await service.remove(req.params.id as string), 'Vendor deleted');
 }));
 
 export default router;
