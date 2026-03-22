@@ -98,8 +98,9 @@ const blockLabelMap: Record<PoPdfBlockKey, string> = {
   footer: 'Footer',
 };
 const checkboxClass = 'h-4 w-4 rounded border border-input';
-const selectClass = 'flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring';
-const textareaClass = 'min-h-[96px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring';
+const inputClass = 'h-10 rounded-xl px-3 text-sm';
+const selectClass = 'flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring';
+const textareaClass = 'min-h-[88px] w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring';
 
 const settingsSections = [
   { id: 'general', label: 'General', description: 'ERP identity and business defaults', icon: Building2 },
@@ -121,34 +122,34 @@ const parseCsvList = (value: string) => value.split(',').map((item) => item.trim
 const toCsv = (value: string[]) => value.join(', ');
 
 const SectionIntro = ({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) => (
-  <div className="space-y-2 border-b border-border pb-5">
+  <div className="space-y-1.5 border-b border-border pb-4">
     <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">{eyebrow}</p>
     <div>
-      <h2 className="text-2xl font-semibold tracking-tight">{title}</h2>
+      <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">{title}</h2>
       <p className="mt-1 text-sm text-muted-foreground">{description}</p>
     </div>
   </div>
 );
 
 const SectionCard = ({ title, description, children, action }: { title: string; description: string; children: React.ReactNode; action?: React.ReactNode }) => (
-  <Card className="p-6">
-    <div className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-start sm:justify-between">
+  <Card className="p-4 sm:p-5">
+    <div className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-start sm:justify-between">
       <div>
-        <h3 className="text-lg font-semibold">{title}</h3>
+        <h3 className="text-base font-semibold">{title}</h3>
         <p className="mt-1 text-sm text-muted-foreground">{description}</p>
       </div>
       {action}
     </div>
-    <div className="mt-6">{children}</div>
+    <div className="mt-4">{children}</div>
   </Card>
 );
 
 const InfoGrid = ({ items }: { items: Array<{ label: string; value?: string | number | null }> }) => (
-  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
     {items.map((item) => (
-      <Card key={item.label} className="p-5">
+      <Card key={item.label} className="p-4">
         <p className="text-sm text-muted-foreground">{item.label}</p>
-        <p className="mt-2 text-lg font-semibold">{item.value || '—'}</p>
+        <p className="mt-1.5 text-base font-semibold sm:text-lg">{item.value || '—'}</p>
       </Card>
     ))}
   </div>
@@ -303,19 +304,19 @@ export const SettingsPage = () => {
   } satisfies PoLayoutSettings);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       <PageHeader title="Settings" description="Organize JAKHIRA ERP preferences into focused sections for cleaner navigation and faster updates." />
 
       <InfoGrid items={summaryCards} />
 
-      <div className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
+      <div className="grid gap-5 xl:grid-cols-[250px_minmax(0,1fr)]">
         <aside className="xl:sticky xl:top-24 xl:self-start">
           <SettingsSectionNav items={settingsSections} activeId={activeSection} onChange={(id) => setActiveSection(id as SettingsSectionId)} />
         </aside>
 
         <div className="space-y-6">
           {activeSection === 'general' ? (
-            <div className="space-y-6">
+            <div className="space-y-5">
               <SectionIntro eyebrow="Section 01" title="General settings" description="Core ERP identity and purchasing defaults are grouped here so teams can quickly confirm the business baseline." />
               <InfoGrid items={generalOverview} />
               <SectionCard title="Business defaults" description="Reference values currently powering procurement flows and document metadata.">
@@ -328,9 +329,9 @@ export const SettingsPage = () => {
                     { label: 'Default Currency', value: `${settings?.poTheme.currencyCode ?? '—'} · ${settings?.poTheme.currencyLabel ?? '—'}` },
                     { label: 'Currency Locale', value: settings?.poTheme.currencyLocale },
                   ].map((item) => (
-                    <div key={item.label} className="rounded-2xl border border-border bg-background/50 p-4">
+                    <div key={item.label} className="rounded-2xl border border-border bg-background/50 p-3.5">
                       <p className="text-sm text-muted-foreground">{item.label}</p>
-                      <p className="mt-2 font-medium">{item.value || '—'}</p>
+                      <p className="mt-1.5 font-medium">{item.value || '—'}</p>
                     </div>
                   ))}
                 </div>
@@ -339,24 +340,24 @@ export const SettingsPage = () => {
           ) : null}
 
           {activeSection === 'appearance' ? (
-            <div className="space-y-6">
+            <div className="space-y-5">
               <SectionIntro eyebrow="Section 02" title="Appearance" description="Adjust how your purchase order documents look without touching the underlying generation logic." />
               <SectionCard title="Brand and typography" description="Update logo, colors, fonts, borders, and currency presentation for exported purchase orders.">
-                <form className="grid gap-6" onSubmit={handleThemeSubmit(onSubmitTheme)}>
+                <form className="grid gap-5" onSubmit={handleThemeSubmit(onSubmitTheme)}>
                   <div className="grid gap-4 md:grid-cols-2">
-                    <div className="space-y-2"><Label htmlFor="po-companyName">Company name</Label><Input id="po-companyName" {...registerTheme('companyName')} />{themeErrors.companyName ? <p className="text-sm text-destructive">{themeErrors.companyName.message}</p> : null}</div>
-                    <div className="space-y-2"><Label htmlFor="logoUrl">Logo URL</Label><Input id="logoUrl" {...registerTheme('logoUrl')} />{themeErrors.logoUrl ? <p className="text-sm text-destructive">{themeErrors.logoUrl.message}</p> : null}</div>
-                    <div className="space-y-2"><Label htmlFor="primaryColor">Primary color</Label><Input id="primaryColor" {...registerTheme('primaryColor')} />{themeErrors.primaryColor ? <p className="text-sm text-destructive">{themeErrors.primaryColor.message}</p> : null}</div>
-                    <div className="space-y-2"><Label htmlFor="currencyLabel">Currency label</Label><Input id="currencyLabel" {...registerTheme('currencyLabel')} /></div>
-                    <div className="space-y-2"><Label htmlFor="currencyCode">Currency code</Label><Input id="currencyCode" {...registerTheme('currencyCode')} /></div>
-                    <div className="space-y-2"><Label htmlFor="currencyLocale">Currency locale</Label><Input id="currencyLocale" {...registerTheme('currencyLocale')} /></div>
+                    <div className="space-y-1.5"><Label htmlFor="po-companyName">Company name</Label><Input id="po-companyName" className={inputClass} {...registerTheme('companyName')} />{themeErrors.companyName ? <p className="text-sm text-destructive">{themeErrors.companyName.message}</p> : null}</div>
+                    <div className="space-y-1.5"><Label htmlFor="logoUrl">Logo URL</Label><Input className={inputClass} id="logoUrl" {...registerTheme('logoUrl')} />{themeErrors.logoUrl ? <p className="text-sm text-destructive">{themeErrors.logoUrl.message}</p> : null}</div>
+                    <div className="space-y-1.5"><Label htmlFor="primaryColor">Primary color</Label><Input className={inputClass} id="primaryColor" {...registerTheme('primaryColor')} />{themeErrors.primaryColor ? <p className="text-sm text-destructive">{themeErrors.primaryColor.message}</p> : null}</div>
+                    <div className="space-y-1.5"><Label htmlFor="currencyLabel">Currency label</Label><Input className={inputClass} id="currencyLabel" {...registerTheme('currencyLabel')} /></div>
+                    <div className="space-y-1.5"><Label htmlFor="currencyCode">Currency code</Label><Input className={inputClass} id="currencyCode" {...registerTheme('currencyCode')} /></div>
+                    <div className="space-y-1.5"><Label htmlFor="currencyLocale">Currency locale</Label><Input className={inputClass} id="currencyLocale" {...registerTheme('currencyLocale')} /></div>
                   </div>
-                  <div className="grid gap-4 md:grid-cols-3">
-                    <div className="space-y-2"><Label htmlFor="baseFontSize">Base font size</Label><Input id="baseFontSize" type="number" {...registerTheme('baseFontSize')} /></div>
-                    <div className="space-y-2"><Label htmlFor="headingFontSize">Heading font size</Label><Input id="headingFontSize" type="number" {...registerTheme('headingFontSize')} /></div>
-                    <div className="space-y-2"><Label htmlFor="tableFontSize">Table font size</Label><Input id="tableFontSize" type="number" {...registerTheme('tableFontSize')} /></div>
-                    <div className="space-y-2"><Label htmlFor="borderStyle">Border style</Label><select id="borderStyle" className={selectClass} {...registerTheme('borderStyle')}><option value="solid">Solid</option><option value="dashed">Dashed</option><option value="double">Double</option></select></div>
-                    <div className="space-y-2"><Label htmlFor="footerStyle">Footer style</Label><select id="footerStyle" className={selectClass} {...registerTheme('footerStyle')}><option value="minimal">Minimal</option><option value="standard">Standard</option><option value="detailed">Detailed</option></select></div>
+                  <div className="grid gap-3 md:grid-cols-3">
+                    <div className="space-y-1.5"><Label htmlFor="baseFontSize">Base font size</Label><Input className={inputClass} id="baseFontSize" type="number" {...registerTheme('baseFontSize')} /></div>
+                    <div className="space-y-1.5"><Label htmlFor="headingFontSize">Heading font size</Label><Input className={inputClass} id="headingFontSize" type="number" {...registerTheme('headingFontSize')} /></div>
+                    <div className="space-y-1.5"><Label htmlFor="tableFontSize">Table font size</Label><Input className={inputClass} id="tableFontSize" type="number" {...registerTheme('tableFontSize')} /></div>
+                    <div className="space-y-1.5"><Label htmlFor="borderStyle">Border style</Label><select id="borderStyle" className={selectClass} {...registerTheme('borderStyle')}><option value="solid">Solid</option><option value="dashed">Dashed</option><option value="double">Double</option></select></div>
+                    <div className="space-y-1.5"><Label htmlFor="footerStyle">Footer style</Label><select id="footerStyle" className={selectClass} {...registerTheme('footerStyle')}><option value="minimal">Minimal</option><option value="standard">Standard</option><option value="detailed">Detailed</option></select></div>
                   </div>
                   <div className="flex justify-end"><Button type="submit" disabled={updateTheme.isPending}>{updateTheme.isPending ? 'Saving...' : 'Save appearance settings'}</Button></div>
                 </form>
@@ -365,15 +366,15 @@ export const SettingsPage = () => {
           ) : null}
 
           {activeSection === 'purchase-order' ? (
-            <div className="space-y-6">
+            <div className="space-y-5">
               <SectionIntro eyebrow="Section 03" title="Purchase Order settings" description="All purchase order controls are grouped here with dedicated sub-sections for template, layout, theme, numbering, and terms." />
-              <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
+              <div className="grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)]">
                 <SettingsSubSectionNav items={purchaseOrderSubSections} activeId={activePurchaseOrderSection} onChange={(id) => setActivePurchaseOrderSection(id as PurchaseOrderSubSectionId)} />
 
-                <div className="space-y-6">
+                <div className="space-y-5">
                   {activePurchaseOrderSection === 'template' ? (
                     <SectionCard title="Template" description="Control which purchase order sections and columns are visible in the generated document.">
-                      <form className="grid gap-5 md:grid-cols-2" onSubmit={handleTemplateSubmit(onSubmitTemplate)}>
+                      <form className="grid gap-3 md:grid-cols-2" onSubmit={handleTemplateSubmit(onSubmitTemplate)}>
                         {[
                           ['showVendorDetails', 'Show vendor details'],
                           ['showBillTo', 'Show bill to section'],
@@ -382,9 +383,9 @@ export const SettingsPage = () => {
                           ['showTermsAndConditions', 'Show terms and conditions'],
                           ['showPreparedBy', 'Show prepared by'],
                           ['showSignatory', 'Show signatory'],
-                        ].map(([field, label]) => <label key={field} className="flex items-center gap-3 rounded-2xl border border-border p-4 text-sm font-medium"><input type="checkbox" className={checkboxClass} {...registerTemplate(field as keyof TemplateFormValues)} />{label}</label>)}
-                        <div className="space-y-2 md:col-span-2"><Label htmlFor="visiblePoDetailFields">Visible PO detail fields</Label><textarea id="visiblePoDetailFields" className={textareaClass} {...registerTemplate('visiblePoDetailFields')} />{templateErrors.visiblePoDetailFields ? <p className="text-sm text-destructive">Comma-separated field list is required.</p> : <p className="text-xs text-muted-foreground">Example: projectName, projectAddress, poNumber, poDate, billingName, billingAddress</p>}</div>
-                        <div className="space-y-2 md:col-span-2"><Label htmlFor="visibleLineItemColumns">Visible line item columns</Label><textarea id="visibleLineItemColumns" className={textareaClass} {...registerTemplate('visibleLineItemColumns')} />{templateErrors.visibleLineItemColumns ? <p className="text-sm text-destructive">Comma-separated line item columns are required.</p> : <p className="text-xs text-muted-foreground">Allowed: index, description, unit, quantity, rate, amount</p>}</div>
+                        ].map(([field, label]) => <label key={field} className="flex items-center gap-3 rounded-2xl border border-border px-3.5 py-3 text-sm font-medium"><input type="checkbox" className={checkboxClass} {...registerTemplate(field as keyof TemplateFormValues)} />{label}</label>)}
+                        <div className="space-y-1.5 md:col-span-2"><Label htmlFor="visiblePoDetailFields">Visible PO detail fields</Label><textarea id="visiblePoDetailFields" className={textareaClass} {...registerTemplate('visiblePoDetailFields')} />{templateErrors.visiblePoDetailFields ? <p className="text-sm text-destructive">Comma-separated field list is required.</p> : <p className="text-xs text-muted-foreground">Example: projectName, projectAddress, poNumber, poDate, billingName, billingAddress</p>}</div>
+                        <div className="space-y-1.5 md:col-span-2"><Label htmlFor="visibleLineItemColumns">Visible line item columns</Label><textarea id="visibleLineItemColumns" className={textareaClass} {...registerTemplate('visibleLineItemColumns')} />{templateErrors.visibleLineItemColumns ? <p className="text-sm text-destructive">Comma-separated line item columns are required.</p> : <p className="text-xs text-muted-foreground">Allowed: index, description, unit, quantity, rate, amount</p>}</div>
                         <div className="md:col-span-2 flex justify-end"><Button type="submit" disabled={updateTemplate.isPending}>{updateTemplate.isPending ? 'Saving...' : 'Save template settings'}</Button></div>
                       </form>
                     </SectionCard>
@@ -392,23 +393,23 @@ export const SettingsPage = () => {
 
                   {activePurchaseOrderSection === 'layout' ? (
                     <SectionCard title="Layout" description="Refine spacing, block widths, line-item proportions, and row-based block placement for the purchase order PDF.">
-                      <form className="grid gap-6" onSubmit={handleLayoutSubmit(onSubmitLayout)}>
-                        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                      <form className="grid gap-5" onSubmit={handleLayoutSubmit(onSubmitLayout)}>
+                        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                           {[
                             ['pageMarginX', 'Page margin X'], ['pageMarginTop', 'Page margin top'], ['pageMarginBottom', 'Page margin bottom'], ['sectionSpacing', 'Section spacing'], ['headerLeftWidthPercent', 'Header left width %'], ['headerRightWidthPercent', 'Header right width %'], ['totalsBlockWidth', 'Totals block width'], ['indexWidth', 'Index col width'], ['descriptionWidth', 'Description col width'], ['unitWidth', 'Unit col width'], ['quantityWidth', 'Quantity col width'], ['rateWidth', 'Rate col width'], ['amountWidth', 'Amount col width'],
-                          ].map(([field, label]) => <div key={field} className="space-y-2"><Label htmlFor={field}>{label}</Label><Input id={field} type="number" {...registerLayout(field as keyof LayoutFormValues)} />{layoutErrors[field as keyof LayoutFormValues] ? <p className="text-sm text-destructive">{String(layoutErrors[field as keyof LayoutFormValues]?.message ?? '')}</p> : null}</div>)}
-                          <div className="space-y-2"><Label htmlFor="sectionColumns">Section layout</Label><select id="sectionColumns" className={selectClass} {...registerLayout('sectionColumns')}><option value="2">2-column</option><option value="3">3-column</option></select></div>
-                          <div className="space-y-2"><Label htmlFor="layoutDensity">Layout density</Label><select id="layoutDensity" className={selectClass} {...registerLayout('layoutDensity')}><option value="compact">Compact</option><option value="standard">Standard</option></select></div>
+                          ].map(([field, label]) => <div key={field} className="space-y-1.5"><Label htmlFor={field}>{label}</Label><Input className={inputClass} id={field} type="number" {...registerLayout(field as keyof LayoutFormValues)} />{layoutErrors[field as keyof LayoutFormValues] ? <p className="text-sm text-destructive">{String(layoutErrors[field as keyof LayoutFormValues]?.message ?? '')}</p> : null}</div>)}
+                          <div className="space-y-1.5"><Label htmlFor="sectionColumns">Section layout</Label><select id="sectionColumns" className={selectClass} {...registerLayout('sectionColumns')}><option value="2">2-column</option><option value="3">3-column</option></select></div>
+                          <div className="space-y-1.5"><Label htmlFor="layoutDensity">Layout density</Label><select id="layoutDensity" className={selectClass} {...registerLayout('layoutDensity')}><option value="compact">Compact</option><option value="standard">Standard</option></select></div>
                         </div>
-                        <div className="space-y-4 rounded-2xl border border-border p-5">
+                        <div className="space-y-3 rounded-2xl border border-border p-4">
                           <div>
                             <h4 className="text-base font-semibold">PO block layout</h4>
                             <p className="text-sm text-muted-foreground">Reorder blocks, hide sections, choose spans, and move blocks between 1, 2, or 3 column rows.</p>
                           </div>
-                          <div className="space-y-4">
+                          <div className="space-y-3">
                             {normalizedEditableRows.map((row) => (
-                              <div key={row.id} className="space-y-4 rounded-2xl border border-border/70 p-4">
-                                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                              <div key={row.id} className="space-y-3 rounded-2xl border border-border/70 p-3.5">
+                                <div className="flex flex-col gap-2.5 md:flex-row md:items-center md:justify-between">
                                   <div>
                                     <p className="font-medium">{row.id}</p>
                                     <p className="text-xs text-muted-foreground">Blocks in this row share the tallest rendered height.</p>
@@ -422,26 +423,26 @@ export const SettingsPage = () => {
                                     </select>
                                   </div>
                                 </div>
-                                <div className="space-y-3">
+                                <div className="space-y-2.5">
                                   {row.blocks.map((block, blockIndex) => (
-                                    <div key={block.id} className="grid gap-3 rounded-xl border border-border/60 p-4 md:grid-cols-[minmax(0,1.3fr)_150px_140px_120px_auto] md:items-end">
-                                      <div className="space-y-2">
+                                    <div key={block.id} className="grid gap-3 rounded-xl border border-border/60 p-3 md:grid-cols-[minmax(0,1.2fr)_140px_130px_110px_auto] md:items-end">
+                                      <div className="space-y-1.5">
                                         <Label>Block</Label>
                                         <div className="rounded-md border border-input bg-muted/30 px-3 py-2 text-sm font-medium">{blockLabelMap[block.key]}</div>
                                       </div>
-                                      <div className="space-y-2">
+                                      <div className="space-y-1.5">
                                         <Label htmlFor={`${block.id}-row`}>Row</Label>
                                         <select id={`${block.id}-row`} className={selectClass} value={row.id} onChange={(event) => moveBlockToRow(block.id, event.target.value)}>
                                           {normalizedEditableRows.map((candidateRow) => <option key={candidateRow.id} value={candidateRow.id}>{candidateRow.id}</option>)}
                                         </select>
                                       </div>
-                                      <div className="space-y-2">
+                                      <div className="space-y-1.5">
                                         <Label htmlFor={`${block.id}-span`}>Span</Label>
                                         <select id={`${block.id}-span`} className={selectClass} value={Math.min(block.span, row.columns)} onChange={(event) => updateBlockRow(row.id, (currentRow) => ({ ...currentRow, blocks: currentRow.blocks.map((item) => item.id === block.id ? { ...item, span: Number(event.target.value) } : item) }))}>
                                           {Array.from({ length: row.columns }, (_, index) => index + 1).map((value) => <option key={value} value={value}>Span {value}</option>)}
                                         </select>
                                       </div>
-                                      <label className="flex items-center gap-3 rounded-xl border border-border/60 p-3 text-sm font-medium">
+                                      <label className="flex items-center gap-2.5 rounded-xl border border-border/60 px-3 py-2.5 text-sm font-medium">
                                         <input type="checkbox" className={checkboxClass} checked={block.visible} onChange={(event) => updateBlockRow(row.id, (currentRow) => ({ ...currentRow, blocks: currentRow.blocks.map((item) => item.id === block.id ? { ...item, visible: event.target.checked } : item) }))} />
                                         Visible
                                       </label>
@@ -463,7 +464,7 @@ export const SettingsPage = () => {
 
                   {activePurchaseOrderSection === 'theme' ? (
                     <SectionCard title="PO Theme" description="This sub-section mirrors the appearance controls so procurement teams can manage all purchase-order-specific styling from one grouped area." action={<Button type="button" variant="outline" onClick={() => setActiveSection('appearance')}>Open appearance <ChevronRight className="ml-2 h-4 w-4" /></Button>}>
-                      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                         {[
                           { label: 'Company name', value: settings?.poTheme.companyName },
                           { label: 'Primary color', value: settings?.poTheme.primaryColor },
@@ -472,9 +473,9 @@ export const SettingsPage = () => {
                           { label: 'Base font size', value: settings?.poTheme.baseFontSize },
                           { label: 'Table font size', value: settings?.poTheme.tableFontSize },
                         ].map((item) => (
-                          <div key={item.label} className="rounded-2xl border border-border bg-background/50 p-4">
+                          <div key={item.label} className="rounded-2xl border border-border bg-background/50 p-3.5">
                             <p className="text-sm text-muted-foreground">{item.label}</p>
-                            <p className="mt-2 font-medium">{item.value || '—'}</p>
+                            <p className="mt-1.5 font-medium">{item.value || '—'}</p>
                           </div>
                         ))}
                       </div>
@@ -482,17 +483,17 @@ export const SettingsPage = () => {
                   ) : null}
 
                   {activePurchaseOrderSection === 'numbering' ? (
-                    <div className="space-y-6">
+                    <div className="space-y-5">
                       <InfoGrid items={numberingOverview} />
                       <SectionCard title="Numbering and fiscal cycle" description="Current numbering references remain intact and are surfaced here for quick verification by procurement and finance teams.">
                         <div className="grid gap-4 md:grid-cols-2">
                           <div className="rounded-2xl border border-border p-4">
                             <p className="text-sm text-muted-foreground">Fiscal year start</p>
-                            <p className="mt-2 font-medium">{settings?.fiscalYearStartMonth ? `Month ${settings.fiscalYearStartMonth}` : '—'}</p>
+                            <p className="mt-1.5 font-medium">{settings?.fiscalYearStartMonth ? `Month ${settings.fiscalYearStartMonth}` : '—'}</p>
                           </div>
                           <div className="rounded-2xl border border-border p-4">
                             <p className="text-sm text-muted-foreground">Purchase document pattern</p>
-                            <p className="mt-2 font-medium">{settings?.purchaseOrderPrefix ? `${settings.purchaseOrderPrefix} / FY / ####` : '—'}</p>
+                            <p className="mt-1.5 font-medium">{settings?.purchaseOrderPrefix ? `${settings.purchaseOrderPrefix} / FY / ####` : '—'}</p>
                           </div>
                         </div>
                       </SectionCard>
@@ -510,7 +511,7 @@ export const SettingsPage = () => {
                         ].map((item) => (
                           <div key={item.label} className="rounded-2xl border border-border p-4">
                             <p className="text-sm text-muted-foreground">{item.label}</p>
-                            <p className="mt-2 font-medium">{item.value || '—'}</p>
+                            <p className="mt-1.5 font-medium">{item.value || '—'}</p>
                           </div>
                         ))}
                       </div>
@@ -522,37 +523,37 @@ export const SettingsPage = () => {
           ) : null}
 
           {activeSection === 'account' ? (
-            <div className="space-y-6">
+            <div className="space-y-5">
               <SectionIntro eyebrow="Section 04" title="Account" description="Personal details and security settings are separated into their own workspace to avoid clutter on operational settings." />
-              <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+              <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
                 <SectionCard title="Profile" description="Update your profile information and keep your JAKHIRA ERP account details accurate.">
-                  <form className="grid gap-4 md:grid-cols-2" onSubmit={handleProfileSubmit((values) => updateProfile.mutateAsync(values))}>
-                    <div className="space-y-2 md:col-span-2"><Label htmlFor="fullName">Full name</Label><Input id="fullName" {...registerProfile('fullName')} />{profileErrors.fullName ? <p className="text-sm text-destructive">{profileErrors.fullName.message}</p> : null}</div>
-                    <div className="space-y-2"><Label htmlFor="email">Email</Label><Input id="email" type="email" {...registerProfile('email')} />{profileErrors.email ? <p className="text-sm text-destructive">{profileErrors.email.message}</p> : null}</div>
-                    <div className="space-y-2"><Label htmlFor="phone">Phone</Label><Input id="phone" {...registerProfile('phone')} />{profileErrors.phone ? <p className="text-sm text-destructive">{profileErrors.phone.message}</p> : null}</div>
-                    <div className="space-y-2 md:col-span-2"><Label htmlFor="avatarUrl">Avatar URL</Label><Input id="avatarUrl" placeholder="https://..." {...registerProfile('avatarUrl')} />{profileErrors.avatarUrl ? <p className="text-sm text-destructive">{profileErrors.avatarUrl.message}</p> : null}</div>
+                  <form className="grid gap-3 md:grid-cols-2" onSubmit={handleProfileSubmit((values) => updateProfile.mutateAsync(values))}>
+                    <div className="space-y-1.5 md:col-span-2"><Label htmlFor="fullName">Full name</Label><Input className={inputClass} id="fullName" {...registerProfile('fullName')} />{profileErrors.fullName ? <p className="text-sm text-destructive">{profileErrors.fullName.message}</p> : null}</div>
+                    <div className="space-y-1.5"><Label htmlFor="email">Email</Label><Input className={inputClass} id="email" type="email" {...registerProfile('email')} />{profileErrors.email ? <p className="text-sm text-destructive">{profileErrors.email.message}</p> : null}</div>
+                    <div className="space-y-1.5"><Label htmlFor="phone">Phone</Label><Input className={inputClass} id="phone" {...registerProfile('phone')} />{profileErrors.phone ? <p className="text-sm text-destructive">{profileErrors.phone.message}</p> : null}</div>
+                    <div className="space-y-1.5 md:col-span-2"><Label htmlFor="avatarUrl">Avatar URL</Label><Input className={inputClass} id="avatarUrl" placeholder="https://..." {...registerProfile('avatarUrl')} />{profileErrors.avatarUrl ? <p className="text-sm text-destructive">{profileErrors.avatarUrl.message}</p> : null}</div>
                     <div className="md:col-span-2 flex justify-end"><Button type="submit" disabled={updateProfile.isPending}>{updateProfile.isPending ? 'Saving...' : 'Save profile changes'}</Button></div>
                   </form>
                 </SectionCard>
 
                 <SectionCard title="Session & security" description="Password updates force a fresh sign-in for safer session handling.">
-                  <div className="flex items-start gap-3 rounded-2xl border border-border bg-background/50 p-4">
+                  <div className="flex items-start gap-3 rounded-2xl border border-border bg-background/50 p-3.5">
                     <ShieldCheck className="mt-0.5 h-5 w-5 text-primary" />
                     <div>
                       <p className="font-medium">Current account overview</p>
                       <p className="text-sm text-muted-foreground">Review role and status before changing credentials.</p>
                     </div>
                   </div>
-                  <dl className="mt-5 space-y-3 text-sm">
+                  <dl className="mt-4 space-y-2.5 text-sm">
                     <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Account</dt><dd>{account?.fullName}</dd></div>
                     <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Role</dt><dd className="capitalize">{account?.role?.replace(/_/g, ' ')}</dd></div>
                     <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Status</dt><dd className="capitalize">{account?.status}</dd></div>
                     <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Email</dt><dd>{account?.email}</dd></div>
                   </dl>
-                  <form className="mt-6 space-y-4" onSubmit={handlePasswordSubmit((values) => changePassword.mutateAsync(values))}>
-                    <div className="space-y-2"><Label htmlFor="currentPassword">Current password</Label><Input id="currentPassword" type="password" {...registerPassword('currentPassword')} />{passwordErrors.currentPassword ? <p className="text-sm text-destructive">{passwordErrors.currentPassword.message}</p> : null}</div>
-                    <div className="space-y-2"><Label htmlFor="newPassword">New password</Label><Input id="newPassword" type="password" {...registerPassword('newPassword')} />{passwordErrors.newPassword ? <p className="text-sm text-destructive">{passwordErrors.newPassword.message}</p> : null}</div>
-                    <div className="space-y-2"><Label htmlFor="confirmPassword">Confirm new password</Label><Input id="confirmPassword" type="password" {...registerPassword('confirmPassword')} />{passwordErrors.confirmPassword ? <p className="text-sm text-destructive">{passwordErrors.confirmPassword.message}</p> : null}</div>
+                  <form className="mt-5 space-y-3.5" onSubmit={handlePasswordSubmit((values) => changePassword.mutateAsync(values))}>
+                    <div className="space-y-1.5"><Label htmlFor="currentPassword">Current password</Label><Input className={inputClass} id="currentPassword" type="password" {...registerPassword('currentPassword')} />{passwordErrors.currentPassword ? <p className="text-sm text-destructive">{passwordErrors.currentPassword.message}</p> : null}</div>
+                    <div className="space-y-1.5"><Label htmlFor="newPassword">New password</Label><Input className={inputClass} id="newPassword" type="password" {...registerPassword('newPassword')} />{passwordErrors.newPassword ? <p className="text-sm text-destructive">{passwordErrors.newPassword.message}</p> : null}</div>
+                    <div className="space-y-1.5"><Label htmlFor="confirmPassword">Confirm new password</Label><Input className={inputClass} id="confirmPassword" type="password" {...registerPassword('confirmPassword')} />{passwordErrors.confirmPassword ? <p className="text-sm text-destructive">{passwordErrors.confirmPassword.message}</p> : null}</div>
                     <div className="flex flex-col gap-3 sm:flex-row sm:justify-between"><Button type="button" variant="outline" onClick={() => void logout()}>Logout</Button><Button type="submit" disabled={changePassword.isPending}>{changePassword.isPending ? 'Updating...' : 'Change password'}</Button></div>
                   </form>
                 </SectionCard>
@@ -561,11 +562,11 @@ export const SettingsPage = () => {
           ) : null}
 
           {activeSection === 'system' ? (
-            <div className="space-y-6">
+            <div className="space-y-5">
               <SectionIntro eyebrow="Section 05" title="System" description="A lightweight operational overview for admins who want to verify active purchase-order-related defaults at a glance." />
               <InfoGrid items={systemOverview} />
               <SectionCard title="Document engine snapshot" description="This optional system area summarizes active document-generation settings without altering the existing backend behavior.">
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                   {[
                     { label: 'Header split', value: settings ? `${settings.poLayout.headerLeftWidthPercent}% / ${settings.poLayout.headerRightWidthPercent}%` : '' },
                     { label: 'Margins', value: settings ? `${settings.poLayout.pageMarginX} / ${settings.poLayout.pageMarginTop} / ${settings.poLayout.pageMarginBottom}` : '' },
@@ -576,7 +577,7 @@ export const SettingsPage = () => {
                   ].map((item) => (
                     <div key={item.label} className="rounded-2xl border border-border p-4">
                       <p className="text-sm text-muted-foreground">{item.label}</p>
-                      <p className="mt-2 font-medium">{item.value || '—'}</p>
+                      <p className="mt-1.5 font-medium">{item.value || '—'}</p>
                     </div>
                   ))}
                 </div>
