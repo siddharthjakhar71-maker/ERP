@@ -23,7 +23,7 @@ export const Sidebar = () => {
   return (
     <aside
       className={cn(
-        'hidden h-screen flex-col border-r border-border bg-card/95 px-4 py-5 backdrop-blur lg:flex',
+        'fixed inset-y-0 left-0 z-30 hidden h-screen flex-col border-r border-border bg-card/95 px-4 py-5 backdrop-blur lg:flex',
         sidebarCollapsed ? 'w-24' : 'w-72',
       )}
     >
@@ -36,7 +36,7 @@ export const Sidebar = () => {
           </div>
         ) : null}
       </div>
-      <nav className="mt-8 flex flex-1 flex-col gap-2">
+      <nav className="mt-8 flex flex-1 flex-col gap-2 overflow-y-auto">
         {items.map((item) => (
           <NavLink key={item.href} item={item} collapsed={sidebarCollapsed} />
         ))}
