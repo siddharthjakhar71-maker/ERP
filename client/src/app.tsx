@@ -5,7 +5,9 @@ import { ThemeProvider } from 'next-themes';
 import { Toaster } from 'sonner';
 import { AppShell } from '@/components/layout/app-shell';
 import { DashboardPage } from '@/pages/dashboard/dashboard-page';
+import { ForgotPasswordPage } from '@/pages/auth/forgot-password-page';
 import { LoginPage } from '@/pages/auth/login-page';
+import { ResetPasswordPage } from '@/pages/auth/reset-password-page';
 import { MaterialsPage } from '@/pages/materials/materials-page';
 import { PurchaseOrderCreatePage } from '@/pages/purchase-orders/purchase-order-create-page';
 import { PurchaseOrderEditPage } from '@/pages/purchase-orders/purchase-order-edit-page';
@@ -50,6 +52,23 @@ const authRoute = createRoute({
   },
   component: LoginPage,
 });
+
+const forgotPasswordRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/forgot-password',
+  component: ForgotPasswordPage,
+});
+const ResetPasswordRoute = () => {
+  const { token } = resetPasswordRoute.useParams();
+  return <ResetPasswordPage token={token} />;
+};
+
+const resetPasswordRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/reset-password/$token',
+  component: ResetPasswordRoute,
+});
+
 const appRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: 'app',
@@ -79,7 +98,7 @@ const paymentsRoute = createRoute({ getParentRoute: () => appRoute, path: '/paym
 const stockRoute = createRoute({ getParentRoute: () => appRoute, path: '/stock', component: stubPage('Stock', 'Phase 6 module scaffold for site-wise inventory visibility and low-stock controls.') });
 const reportsRoute = createRoute({ getParentRoute: () => appRoute, path: '/reports', component: stubPage('Reports', 'Phase 6 module scaffold for procurement analytics, ledgers, and ageing summaries.') });
 
-const routeTree = rootRoute.addChildren([authRoute, appRoute.addChildren([dashboardRoute, vendorsRoute, materialsRoute, sitesRoute, settingsRoute, purchaseRoute, purchaseCreateRoute, purchaseViewRoute, purchaseEditRoute, grnRoute, billsRoute, paymentsRoute, stockRoute, reportsRoute])]);
+const routeTree = rootRoute.addChildren([authRoute, forgotPasswordRoute, resetPasswordRoute, appRoute.addChildren([dashboardRoute, vendorsRoute, materialsRoute, sitesRoute, settingsRoute, purchaseRoute, purchaseCreateRoute, purchaseViewRoute, purchaseEditRoute, grnRoute, billsRoute, paymentsRoute, stockRoute, reportsRoute])]);
 const router = createRouter({ routeTree, defaultPreload: 'intent' });
 
 declare module '@tanstack/react-router' { interface Register { router: typeof router; } }

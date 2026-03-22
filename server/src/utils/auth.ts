@@ -34,7 +34,7 @@ export const hashPassword = async (password: string) => {
   return `scrypt:${salt}:${derived.toString('hex')}`;
 };
 
-export const verifyPassword = async (password: string, storedHash: string) => {
+const verifyScryptPassword = async (password: string, storedHash: string) => {
   const { salt, hash } = parseStoredHash(storedHash);
   const derived = (await scrypt(password, salt, 64)) as Buffer;
   const stored = Buffer.from(hash, 'hex');
@@ -45,6 +45,8 @@ export const verifyPassword = async (password: string, storedHash: string) => {
 
   return timingSafeEqual(stored, derived);
 };
+
+export const verifyPassword = async (password: string, storedHash: string) => verifyScryptPassword(password, storedHash);
 
 export const createSessionToken = (userId: string) => `${TOKEN_PREFIX}:${userId}`;
 
